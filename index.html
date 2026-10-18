@@ -832,7 +832,7 @@ let s=0,t=15,timer=null,playing=false;function hit(){if(playing){s++;score.textC
     });
   });
   document.querySelectorAll("[data-template]").forEach(btn => {
-    btn.addEventListener("click",() => loadTemplate(btn.dataset.template);
+    btn.addEventListener("click",() => loadTemplate(btn.dataset.template));
   });
   $("settingsBtn").addEventListener("click",openSettings);
   $("cancelSettings").addEventListener("click",closeSettings);
