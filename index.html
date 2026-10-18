@@ -1,687 +1,433 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Code Studio</title>
 <style>
-:root {
-  color-scheme: dark;
-  --glass: rgba(27, 29, 35, .76);
-  --glass-light: rgba(255,255,255,.065);
-  --border: rgba(255,255,255,.12);
-  --text: #f4f4f7;
-  --muted: #9b9ca8;
-  --accent: #9d8bff;
-}
-* { box-sizing:border-box; }
-body {
-  margin:0; min-height:100vh; overflow:hidden;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",sans-serif;
-  color:var(--text);
-  background:radial-gradient(ellipse at 20% 5%,#33304c 0%,transparent 45%),
-             radial-gradient(ellipse at 90% 85%,#2b253b 0%,transparent 38%),#101116;
-}
-button,input,textarea { font:inherit; }
-button { color:inherit; cursor:pointer; }
-button:focus-visible,input:focus-visible,textarea:focus-visible {
-  outline:2px solid #b7aaff; outline-offset:2px;
-}
+:root{color-scheme:dark;--text:#f3f1fa;--muted:#a09eae;--line:#ffffff17;--accent:#a99aff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;overflow:hidden;color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 15% 5%,#36304f,transparent 42%),radial-gradient(ellipse at 90% 85%,#35283d,transparent 38%),#111116}
+button,input,textarea,select{font:inherit}
+button{color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* Live code is drawn BEHIND the glass application. */
-#ambientCode {
-  position:fixed; inset:0; z-index:0; overflow:hidden;
-  pointer-events:none; opacity:.72;
-}
-.trace-pane {
-  position:absolute; width:43vw; height:88vh; overflow:hidden;
-  padding:22px; border:1px solid rgba(255,255,255,.055);
-  border-radius:24px; background:rgba(7,8,12,.12);
-  box-shadow:0 15px 80px #0002; backdrop-filter:blur(1px);
-}
-.trace-pane:nth-child(1) { top:7%; left:3%; transform:rotate(-3deg); }
-.trace-pane:nth-child(2) { top:12%; right:1%; transform:rotate(2deg); }
-.trace-pane:nth-child(3) { bottom:-44%; left:29%; transform:rotate(-1deg); }
-.trace-label {
-  color:#a7a0c8; font:11px ui-monospace,monospace;
-  letter-spacing:2px; text-transform:uppercase; margin-bottom:14px;
-}
-.trace-code {
-  color:#8d877b; font:11px/1.75 ui-monospace,SFMono-Regular,monospace;
-  white-space:pre-wrap; overflow-wrap:anywhere;
-  text-shadow:0 0 9px #c6b3ff18;
-}
-.trace-code .new-line { color:#c0b2ff; }
-.trace-code .cursor {
-  display:inline-block; width:6px; height:12px; margin-left:3px;
-  background:#c4b5fd; vertical-align:middle; animation:blink 1s steps(2) infinite;
-}
-@keyframes blink { 50% { opacity:0; } }
+/* The code trace sits behind the glass panels. */
+#ambientCode{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;opacity:.83}
+.trace-pane{position:absolute;width:43vw;height:87vh;overflow:hidden;padding:22px;border:1px solid #ffffff0b;border-radius:24px;background:#08090d20;box-shadow:0 15px 80px #0002;backdrop-filter:blur(1px)}
+.trace-pane:nth-child(1){top:7%;left:3%;transform:rotate(-3deg)}
+.trace-pane:nth-child(2){top:12%;right:1%;transform:rotate(2deg)}
+.trace-pane:nth-child(3){bottom:-44%;left:29%;transform:rotate(-1deg)}
+.trace-label{color:#a69bd0;font:10px ui-monospace,monospace;letter-spacing:2px;margin-bottom:14px}
+.trace-code{color:#a49c8c;font:11px/1.7 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 0 8px #c4b5fd18;margin:0}
+.trace-code .live-cursor{display:inline-block;width:6px;height:12px;background:#b6a6ff;animation:blink .8s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
 
-.app {
-  position:relative; z-index:1; display:flex; flex-direction:column;
-  height:100dvh; max-height:100dvh; padding:12px; gap:10px;
-}
-.glass {
-  background:rgba(23,24,30,.67); border:1px solid var(--border);
-  backdrop-filter:blur(27px) saturate(145%);
-  -webkit-backdrop-filter:blur(27px) saturate(145%);
-  box-shadow:0 12px 40px #0002, inset 0 1px #ffffff09;
-}
-.topbar {
-  flex-shrink:0; min-height:56px; border-radius:19px; padding:10px 16px;
-  display:flex; align-items:center; gap:14px;
-}
-.traffic { display:flex; gap:7px; }
-.dot { width:11px;height:11px;border-radius:50%; }
-.red {background:#ff625b}.yellow {background:#ffbd44}.green {background:#30ca65}
-.brand { font-weight:750; letter-spacing:-.5px; white-space:nowrap; }
-.brand span { color:#b4a6ff; }
-.top-status { display:flex; align-items:center; gap:8px; color:var(--muted);font-size:12px; }
-.status-dot { width:7px;height:7px;border-radius:50%;background:#777; }
-.status-dot.online { background:#58d69b; box-shadow:0 0 12px #58d69b88; }
-.status-dot.working { background:#b4a6ff; animation:blink .7s infinite; }
-.top-actions { margin-left:auto;display:flex;gap:8px; }
-.btn {
-  border:1px solid var(--border); background:rgba(255,255,255,.055);
-  padding:9px 12px;border-radius:11px; font-size:12px;
-  transition:background .18s,transform .18s,border-color .18s;
-}
-.btn:hover { background:rgba(255,255,255,.13);border-color:#ffffff32;transform:translateY(-1px); }
-.btn.primary { background:linear-gradient(135deg,#8d7bfa,#6e5bdd);border-color:#b7aaff66; }
-.btn.primary:hover { background:linear-gradient(135deg,#a092ff,#8170f1); }
-.btn:disabled { opacity:.4;cursor:not-allowed;transform:none; }
-.workspace {
-  flex:1; min-height:0; display:grid;
-  grid-template-columns:215px minmax(280px,1fr) 295px; gap:10px;
-}
-.sidebar,.center,.rightbar { min-width:0;min-height:0;border-radius:20px;overflow:hidden; }
-.sidebar,.rightbar { display:flex;flex-direction:column; }
-.side-head { padding:18px 15px 12px; }
-.section-label {
-  font-size:10px;font-weight:750;letter-spacing:1.7px;
-  text-transform:uppercase;color:var(--muted);margin-bottom:12px;
-}
-.new-project { width:100%;text-align:left;padding:11px 12px; }
-.search { width:100%;margin-top:10px;background:#ffffff07;border:1px solid var(--border);
-  color:var(--text);border-radius:10px;padding:10px 11px;font-size:12px; }
-.project-list { padding:4px 9px;overflow:auto;flex:1; }
-.project-item {
-  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  padding:11px 10px;border:1px solid transparent;background:transparent;
-  border-radius:12px;color:#d5d4df;font-size:12px;margin-bottom:4px;
-}
-.project-item:hover { background:#ffffff08; }
-.project-item.active { background:#a395ff17;border-color:#a395ff35; }
-.project-icon {
-  display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;
-  border-radius:9px;background:#ffffff0c;font-size:15px;
-}
-.project-name { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.project-sub { color:var(--muted);font-size:10px;margin-top:3px; }
-.side-foot { padding:12px;border-top:1px solid #ffffff0b; }
-.small-note { font-size:10px;color:var(--muted);line-height:1.6; }
-
-.center { display:flex;flex-direction:column; }
-.center-head {
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:15px 17px;border-bottom:1px solid #ffffff10;
-}
-.file-title { font-size:13px;font-weight:650; }
-.file-meta { font-size:10px;color:var(--muted);margin-top:4px; }
-.center-tools { display:flex;gap:6px;flex-wrap:wrap; }
-.editor-wrap { flex:1;min-height:0;position:relative;display:flex;flex-direction:column; }
-.editor-tabs {
-  display:flex;align-items:center;gap:8px;padding:9px 14px;
-  color:var(--muted);font-size:11px;border-bottom:1px solid #ffffff0a;
-}
-.tab { color:#c5baff;border-bottom:2px solid #a89aff;padding:7px 5px; }
-.editor-body { flex:1;min-height:0;position:relative;overflow:auto;padding:16px; }
-.editor-placeholder {
-  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;text-align:center;padding:24px;color:var(--muted);
-}
-.placeholder-icon {
-  width:56px;height:56px;border-radius:17px;display:grid;place-items:center;
-  background:#a395ff13;border:1px solid #a395ff27;font-size:25px;margin-bottom:15px;
-}
-.editor-placeholder h2 { color:#e9e7f3;font-size:17px;margin:0 0 8px; }
-.editor-placeholder p { max-width:300px;font-size:12px;line-height:1.7;margin:0; }
-#codeView {
-  display:none;margin:0;color:#c7c7d5;font:11px/1.75 ui-monospace,SFMono-Regular,monospace;
-  white-space:pre;tab-size:2;
-}
-.editor-footer {
-  border-top:1px solid #ffffff0c;padding:10px 14px;display:flex;gap:12px;
-  align-items:center;justify-content:space-between;font-size:10px;color:var(--muted);
-}
-.footer-left { display:flex;gap:12px;flex-wrap:wrap; }
-.pill { padding:5px 8px;border:1px solid var(--border);border-radius:20px; }
-.rightbar { padding:17px;gap:14px;overflow-y:auto; }
-.panel-title { font-size:14px;font-weight:700;margin-bottom:6px; }
-.panel-subtitle { color:var(--muted);font-size:11px;line-height:1.6; }
-.prompt-box {
-  width:100%;min-height:135px;resize:vertical;color:var(--text);
-  background:rgba(0,0,0,.19);border:1px solid var(--border);
-  border-radius:14px;padding:13px;font-size:12px;line-height:1.65;
-}
-.prompt-box::placeholder { color:#858592; }
-.field-label { display:block;color:#c9c7d7;font-size:11px;margin-bottom:8px; }
-.select {
-  width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);
-  background:#25252f;color:var(--text);font-size:12px;
-}
-.prompt-actions { display:flex;gap:8px; }
-.prompt-actions button { flex:1; }
-.activity {
-  border:1px solid #ffffff10;background:#ffffff04;border-radius:13px;padding:12px;
-}
-.activity-head { display:flex;align-items:center;gap:8px;font-size:11px;font-weight:650; }
-.activity-detail { color:var(--muted);font-size:10px;line-height:1.6;margin-top:8px;overflow-wrap:anywhere; }
-.progress { height:3px;border-radius:10px;background:#ffffff12;margin-top:11px;overflow:hidden; }
-.progress-fill { height:100%;width:0;background:linear-gradient(90deg,#8d7bfa,#c4b5fd);transition:width .2s; }
-.template-grid { display:grid;grid-template-columns:1fr 1fr;gap:7px; }
-.template {
-  text-align:left;padding:10px;border-radius:11px;border:1px solid var(--border);
-  background:#ffffff04;font-size:11px;transition:.18s;
-}
-.template:hover { background:#a395ff14;border-color:#a395ff55; }
-.template span { display:block;font-size:16px;margin-bottom:6px; }
-.toast {
-  position:fixed;z-index:10;left:50%;bottom:22px;transform:translate(-50%,20px);
-  opacity:0;pointer-events:none;padding:11px 16px;border-radius:12px;
-  background:#282832;border:1px solid var(--border);font-size:12px;
-  transition:.22s;box-shadow:0 12px 30px #0005;max-width:90vw;
-}
-.toast.show { opacity:1;transform:translate(-50%,0); }
-@media(max-width:1000px) {
-  .workspace { grid-template-columns:175px minmax(240px,1fr); }
-  .rightbar { display:none; }
-}
-@media(max-width:650px) {
-  body { overflow:auto; }
-  .app { height:auto;min-height:100dvh;max-height:none;padding:7px; }
-  .workspace { display:flex;flex-direction:column; }
-  .sidebar { min-height:140px;max-height:200px; }
-  .project-list { display:flex;gap:6px; }
-  .project-item { min-width:135px;align-self:flex-start; }
-  .center { min-height:440px; }
-  .rightbar { display:flex;max-height:none; }
-  .topbar { flex-wrap:wrap; }
-  .top-status { display:none; }
-  .trace-pane { width:75vw;opacity:.55; }
-  .trace-pane:nth-child(3) { display:none; }
-}
+.app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;gap:10px;padding:12px}
+.glass{background:rgba(24,24,31,.65);border:1px solid var(--line);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%);box-shadow:0 12px 40px #0002,inset 0 1px #ffffff09}
+.topbar{flex-shrink:0;min-height:56px;border-radius:19px;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.traffic{display:flex;gap:7px}.dot{width:11px;height:11px;border-radius:50%}.red{background:#ff625b}.yellow{background:#ffbd44}.green{background:#30ca65}
+.brand{font-weight:750;letter-spacing:-.5px;white-space:nowrap}.brand span{color:#b7aaff}
+.top-status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#777;flex-shrink:0}
+.status-dot.online{background:#58d69b;box-shadow:0 0 12px #58d69b88}
+.status-dot.working{background:#b4a6ff;animation:blink .7s infinite}
+.top-actions{margin-left:auto;display:flex;gap:8px}
+.btn{border:1px solid var(--line);background:#ffffff09;padding:9px 12px;border-radius:11px;font-size:12px;transition:.18s}
+.btn:hover{background:#ffffff17;border-color:#ffffff38;transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,#8d7bfa,#6e5bdd);border-color:#b7aaff66}
+.btn.primary:hover{background:linear-gradient(135deg,#a092ff,#8170f1)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.workspace{flex:1;min-height:0;display:grid;grid-template-columns:215px minmax(260px,1fr) 290px;gap:10px}
+.sidebar,.center,.rightbar{min-width:0;min-height:0;border-radius:20px;overflow:hidden}
+.sidebar,.rightbar{display:flex;flex-direction:column}
+.side-head{padding:18px 15px 12px}
+.section-label{font-size:10px;font-weight:750;letter-spacing:1.7px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.new-project{width:100%;text-align:left;padding:11px 12px}
+.search{width:100%;margin-top:10px;background:#ffffff07;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 11px;font-size:12px}
+.project-list{padding:4px 9px;overflow:auto;flex:1}
+.project-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 10px;border:1px solid transparent;background:transparent;border-radius:12px;color:#d5d4df;font-size:12px;margin-bottom:4px}
+.project-item:hover{background:#ffffff0c}.project-item.active{background:#a395ff17;border-color:#a395ff35}
+.project-icon{display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;border-radius:9px;background:#ffffff0c;font-size:15px}
+.project-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-sub{color:var(--muted);font-size:10px;margin-top:3px}
+.side-foot{padding:12px;border-top:1px solid #ffffff0b}
+.small-note{font-size:10px;color:var(--muted);line-height:1.6}
+.center{display:flex;flex-direction:column}
+.center-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid #ffffff10}
+.file-title{font-size:13px;font-weight:650}.file-meta{font-size:10px;color:var(--muted);margin-top:4px}
+.center-tools{display:flex;gap:6px;flex-wrap:wrap}
+.editor-wrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.editor-tabs{display:flex;align-items:center;gap:8px;padding:9px 14px;color:var(--muted);font-size:11px;border-bottom:1px solid #ffffff0a}
+.tab{color:#c5baff;border-bottom:2px solid #a89aff;padding:7px 5px}
+.editor-body{flex:1;min-height:0;position:relative;overflow:auto;padding:16px}
+.editor-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted)}
+.placeholder-icon{width:56px;height:56px;border-radius:17px;display:grid;place-items:center;background:#a395ff13;border:1px solid #a395ff27;font-size:25px;margin-bottom:15px}
+.editor-placeholder h2{color:#e9e7f3;font-size:17px;margin:0 0 8px}.editor-placeholder p{max-width:310px;font-size:12px;line-height:1.7;margin:0}
+#codeView{display:none;margin:0;color:#c7c7d5;font:11px/1.75 ui-monospace,monospace;white-space:pre;tab-size:2}
+.editor-footer{border-top:1px solid #ffffff0c;padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted)}
+.footer-left{display:flex;gap:12px;flex-wrap:wrap}.pill{padding:5px 8px;border:1px solid var(--line);border-radius:20px}
+.rightbar{padding:17px;gap:14px;overflow-y:auto}
+.panel-title{font-size:14px;font-weight:700;margin-bottom:6px}.panel-subtitle{color:var(--muted);font-size:11px;line-height:1.6}
+.prompt-box{width:100%;min-height:130px;resize:vertical;color:var(--text);background:#0003;border:1px solid var(--line);border-radius:14px;padding:13px;font-size:12px;line-height:1.65}
+.prompt-box::placeholder{color:#858592}
+.field-label{display:block;color:#c9c7d7;font-size:11px;margin-bottom:8px}
+.select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#25252f;color:var(--text);font-size:12px}
+.prompt-actions{display:flex;gap:8px}.prompt-actions button{flex:1}
+.activity{border:1px solid #ffffff10;background:#ffffff04;border-radius:13px;padding:12px}
+.activity-head{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:650}
+.activity-detail{color:var(--muted);font-size:10px;line-height:1.6;margin-top:8px;overflow-wrap:anywhere}
+.progress{height:3px;border-radius:10px;background:#ffffff12;margin-top:11px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#8d7bfa,#c4b5fd);transition:width .2s}
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.template{text-align:left;padding:10px;border-radius:11px;border:1px solid var(--line);background:#ffffff04;font-size:11px;transition:.18s}
+.template:hover{background:#a395ff14;border-color:#a395ff55}.template span{display:block;font-size:16px;margin-bottom:6px}
+.toast{position:fixed;z-index:10;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:11px 16px;border-radius:12px;background:#282832;border:1px solid var(--line);font-size:12px;transition:.22s;box-shadow:0 12px 30px #0005;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:1000px){.workspace{grid-template-columns:175px minmax(240px,1fr)}.rightbar{display:none}}
+@media(max-width:650px){body{overflow:auto}.app{height:auto;min-height:100dvh}.workspace{display:flex;flex-direction:column}.sidebar{min-height:140px;max-height:200px}.project-list{display:flex;gap:6px}.project-item{min-width:135px;align-self:flex-start}.center{min-height:440px}.rightbar{display:flex;max-height:none}.topbar{flex-wrap:wrap}.top-status{display:none}.trace-pane{width:75vw;opacity:.55}.trace-pane:nth-child(3){display:none}}
 </style>
 </head>
 <body>
-
 <div id="ambientCode" aria-hidden="true">
-  <div class="trace-pane"><div class="trace-label">Background trace · 01</div><pre class="trace-code" id="bgCode1">// Waiting for your next project...</pre></div>
-  <div class="trace-pane"><div class="trace-label">Background trace · 02</div><pre class="trace-code" id="bgCode2">// AI code stream will appear here...</pre></div>
-  <div class="trace-pane"><div class="trace-label">Background trace · 03</div><pre class="trace-code" id="bgCode3">// Live generation layer</pre></div>
+  <div class="trace-pane"><div class="trace-label">LIVE BACKGROUND TRACE · 01</div><pre class="trace-code" id="bgCode1">// Waiting for your idea...</pre></div>
+  <div class="trace-pane"><div class="trace-label">LIVE BACKGROUND TRACE · 02</div><pre class="trace-code" id="bgCode2">// AI source will appear here...</pre></div>
+  <div class="trace-pane"><div class="trace-label">LIVE BACKGROUND TRACE · 03</div><pre class="trace-code" id="bgCode3">// Code trace is ready...</pre></div>
 </div>
 
 <div class="app">
-  <header class="topbar glass">
-    <div class="traffic"><i class="dot red"></i><i class="dot yellow"></i><i class="dot green"></i></div>
-    <div class="brand">Code <span>Studio</span></div>
-    <div class="top-status"><span class="status-dot" id="statusDot"></span><span id="statusText">Ready to build</span></div>
-    <div class="top-actions">
-      <button class="btn" id="refreshBtn" title="Refresh the live preview">↻ Refresh</button>
-      <button class="btn" id="exportBtn">↓ Export HTML</button>
-      <button class="btn primary" id="newProjectBtn">＋ New project</button>
+<header class="topbar glass">
+  <div class="traffic"><i class="dot red"></i><i class="dot yellow"></i><i class="dot green"></i></div>
+  <div class="brand">Code <span>Studio</span></div>
+  <div class="top-status"><span class="status-dot" id="statusDot"></span><span id="statusText">Ready to build</span></div>
+  <div class="top-actions">
+    <button class="btn" id="refreshBtn">↻ Refresh</button>
+    <button class="btn" id="exportBtn">↓ Export HTML</button>
+    <button class="btn primary" id="newProjectBtn">＋ New project</button>
+  </div>
+</header>
+
+<main class="workspace">
+<aside class="sidebar glass">
+  <div class="side-head">
+    <div class="section-label">Workspace</div>
+    <button class="btn new-project" id="sidebarNewBtn">＋ Create project</button>
+    <input class="search" id="searchProjects" placeholder="⌕ Search projects..." aria-label="Search projects">
+  </div>
+  <div class="project-list" id="projectList"></div>
+  <div class="side-foot"><div class="small-note">Projects are saved in this browser. Export HTML to keep a separate copy.</div></div>
+</aside>
+
+<section class="center glass">
+  <div class="center-head">
+    <div><div class="file-title" id="fileTitle">Untitled Project</div><div class="file-meta" id="fileMeta">HTML · Live workspace</div></div>
+    <div class="center-tools"><button class="btn" id="previewBtn">▶ Preview</button><button class="btn" id="copyBtn">Copy code</button></div>
+  </div>
+  <div class="editor-wrap">
+    <div class="editor-tabs"><span class="tab">⌘ index.html</span><span id="editorMode">Background generation enabled</span></div>
+    <div class="editor-body">
+      <div class="editor-placeholder" id="editorPlaceholder"><div class="placeholder-icon">⌘</div><h2>Your next idea starts here</h2><p>Describe an app on the right. Watch the code stream into the dark translucent background panels, then preview or export the finished HTML.</p></div>
+      <pre id="codeView"></pre>
     </div>
-  </header>
+  </div>
+  <div class="editor-footer"><div class="footer-left"><span id="lineCount">0 lines</span><span>HTML · CSS · JavaScript</span><span id="saveStatus">Saved locally</span></div><span class="pill" id="liveBadge">● Idle</span></div>
+</section>
 
-  <main class="workspace">
-    <aside class="sidebar glass">
-      <div class="side-head">
-        <div class="section-label">Workspace</div>
-        <button class="btn new-project" id="sidebarNewBtn">＋ Create project</button>
-        <input class="search" id="searchProjects" placeholder="⌕  Search projects..." aria-label="Search projects">
-      </div>
-      <div class="project-list" id="projectList"></div>
-      <div class="side-foot">
-        <div class="small-note">Your projects are saved in this browser. Export HTML to keep a separate copy.</div>
-      </div>
-    </aside>
-
-    <section class="center glass">
-      <div class="center-head">
-        <div><div class="file-title" id="fileTitle">Untitled Project</div><div class="file-meta" id="fileMeta">HTML · Live workspace</div></div>
-        <div class="center-tools">
-          <button class="btn" id="previewBtn">▶ Preview</button>
-          <button class="btn" id="copyBtn">Copy code</button>
-        </div>
-      </div>
-      <div class="editor-wrap">
-        <div class="editor-tabs"><span class="tab">⌘ index.html</span><span id="editorMode">Background generation enabled</span></div>
-        <div class="editor-body" id="editorBody">
-          <div class="editor-placeholder" id="editorPlaceholder">
-            <div class="placeholder-icon">⌘</div>
-            <h2>Your next idea starts here</h2>
-            <p>Describe an app on the right. Watch the AI write code in the translucent background panels, then preview or export the finished HTML.</p>
-          </div>
-          <pre id="codeView"></pre>
-        </div>
-      </div>
-      <div class="editor-footer">
-        <div class="footer-left"><span id="lineCount">0 lines</span><span>HTML · CSS · JavaScript</span><span id="saveStatus">Saved locally</span></div>
-        <span class="pill" id="liveBadge">● Idle</span>
-      </div>
-    </section>
-
-    <aside class="rightbar glass">
-      <div>
-        <div class="panel-title">Build with AI</div>
-        <div class="panel-subtitle">Describe what you want to create. Code streams into the background while it is generated.</div>
-      </div>
-      <div>
-        <label class="field-label" for="promptInput">What should we build?</label>
-        <textarea id="promptInput" class="prompt-box" placeholder="Make a beautiful notes app where I can create, edit, delete and search notes. Save notes in the browser."></textarea>
-      </div>
-      <div>
-        <label class="field-label" for="projectNameInput">Project name</label>
-        <input id="projectNameInput" class="search" placeholder="My awesome app" style="margin:0">
-      </div>
-      <div>
-        <label class="field-label" for="styleSelect">Design style</label>
-        <select id="styleSelect" class="select">
-          <option>Mac glassmorphism</option>
-          <option>Minimal modern</option>
-          <option>Futuristic neon</option>
-          <option>Soft gradients</option>
-          <option>Colorful playful</option>
-        </select>
-      </div>
-      <div class="prompt-actions">
-        <button class="btn" id="clearPromptBtn">Clear</button>
-        <button class="btn primary" id="generateBtn">✦ Generate code</button>
-      </div>
-      <div class="activity">
-        <div class="activity-head"><span class="status-dot" id="activityDot"></span><span id="activityTitle">Ready for your idea</span></div>
-        <div class="activity-detail" id="activityDetail">Your AI generation status and progress will appear here.</div>
-        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
-      </div>
-      <div>
-        <div class="section-label">Quick start</div>
-        <div class="template-grid">
-          <button class="template" data-prompt="Build a notes app with create, edit, delete, search, pin and local browser storage."><span>📝</span>Notes app</button>
-          <button class="template" data-prompt="Build a calculator app with a polished interface, keyboard support and working arithmetic."><span>🧮</span>Calculator</button>
-          <button class="template" data-prompt="Build a student study planner with tasks, deadlines, completion checkboxes and progress tracking."><span>📚</span>Study planner</button>
-          <button class="template" data-prompt="Build a colorful 2D arcade game with keyboard controls, score, restart and increasing difficulty."><span>🎮</span>Mini game</button>
-        </div>
-      </div>
-      <div class="small-note">The AI returns a complete single-file HTML app. Your Replicate token stays on the Vercel server.</div>
-    </aside>
-  </main>
+<aside class="rightbar glass">
+  <div><div class="panel-title">Build with AI</div><div class="panel-subtitle">Describe your app naturally. Watch the code arrive live behind the glass panels.</div></div>
+  <div><label class="field-label" for="promptInput">What should we build?</label><textarea id="promptInput" class="prompt-box" placeholder="Make a docs app where I can write, edit and save documents."></textarea></div>
+  <div><label class="field-label" for="projectNameInput">Project name</label><input id="projectNameInput" class="search" placeholder="My awesome app" style="margin:0"></div>
+  <div><label class="field-label" for="styleSelect">Design style</label><select id="styleSelect" class="select"><option>Mac glassmorphism</option><option>Minimal modern</option><option>Futuristic neon</option><option>Soft gradients</option><option>Colorful playful</option></select></div>
+  <div class="prompt-actions"><button class="btn" id="clearPromptBtn">Clear</button><button class="btn primary" id="generateBtn">✦ Generate code</button></div>
+  <div class="activity"><div class="activity-head"><span class="status-dot" id="activityDot"></span><span id="activityTitle">Ready for your idea</span></div><div class="activity-detail" id="activityDetail">Describe an app to start live code generation.</div><div class="progress"><div class="progress-fill" id="progressFill"></div></div></div>
+  <div><div class="section-label">Quick start</div><div class="template-grid">
+    <button class="template" data-prompt="Make a document editor app where I can write, edit, create, rename, save and delete documents. Autosave everything in localStorage."><span>📝</span>Docs app</button>
+    <button class="template" data-prompt="Build a calculator with working arithmetic and keyboard support."><span>🧮</span>Calculator</button>
+    <button class="template" data-prompt="Build a student study planner with tasks, deadlines and progress tracking."><span>📚</span>Study planner</button>
+    <button class="template" data-prompt="Build a playable 2D arcade game with keyboard controls, score and restart."><span>🎮</span>Mini game</button>
+  </div></div>
+  <div class="small-note">The Replicate token stays on your Vercel server, not in this page.</div>
+</aside>
+</main>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
 (() => {
-  "use strict";
-  const $ = id => document.getElementById(id);
-  const STORE_KEY = "codeStudioProjects_v3";
-  let projects = [];
-  let activeId = null;
-  let isGenerating = false;
-  let currentCode = "";
-  let toastTimer;
+"use strict";
+const $ = id => document.getElementById(id);
+const STORE = "codeStudioProjects_v4";
+let projects = [], activeId = null, currentCode = "", isGenerating = false, toastTimer;
 
-  const blankProject = (name = "Untitled Project") => ({
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(),
-    name, code: "", updatedAt: Date.now()
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2800);
+}
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function newProject(name = "Untitled Project") {
+  return {id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(), name, code:"", updatedAt:Date.now()};
+}
+function activeProject() { return projects.find(p => p.id === activeId); }
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(projects)); $("saveStatus").textContent = "Saved locally"; }
+  catch (_) { $("saveStatus").textContent = "Storage unavailable"; }
+}
+function setStatus(mode, message) {
+  $("statusText").textContent = message;
+  $("statusDot").className = "status-dot " + mode;
+  $("activityDot").className = "status-dot " + mode;
+  $("liveBadge").textContent = mode === "working" ? "● Generating" : mode === "online" ? "● Complete" : "● Idle";
+}
+function progress(value) { $("progressFill").style.width = Math.max(0, Math.min(100, value)) + "%"; }
+function renderProjects() {
+  const q = $("searchProjects").value.trim().toLowerCase();
+  const visible = projects.filter(p => p.name.toLowerCase().includes(q));
+  $("projectList").innerHTML = visible.length ? visible.map(p => `
+    <button class="project-item ${p.id === activeId ? "active" : ""}" data-id="${escapeHTML(p.id)}">
+      <span class="project-icon">⌘</span><span style="min-width:0"><span class="project-name" style="display:block">${escapeHTML(p.name)}</span><span class="project-sub">${p.code ? p.code.split("\n").length+" lines · HTML" : "New project"}</span></span>
+    </button>`).join("") : '<div class="small-note" style="padding:15px 8px">No projects found.</div>';
+  $("projectList").querySelectorAll("[data-id]").forEach(b => b.addEventListener("click", () => selectProject(b.dataset.id)));
+}
+function traceSet(code) {
+  const pieces = [code.slice(0,2200),code.slice(2200,4400),code.slice(4400,6600)];
+  ["bgCode1","bgCode2","bgCode3"].forEach((id,i) => $(id).textContent = pieces[i] || "// Waiting for code...");
+}
+function traceAppend(chunk) {
+  const parts = [chunk.slice(0, Math.ceil(chunk.length/3)), chunk.slice(Math.ceil(chunk.length/3), Math.ceil(chunk.length*2/3)), chunk.slice(Math.ceil(chunk.length*2/3))];
+  ["bgCode1","bgCode2","bgCode3"].forEach((id,i) => {
+    const el = $(id);
+    if (el.textContent.startsWith("// Waiting") || el.textContent.startsWith("// AI source") || el.textContent.startsWith("// Code trace")) el.textContent = "";
+    el.textContent += parts[i];
+    if (el.textContent.length > 7000) el.textContent = el.textContent.slice(-5500);
   });
-
-  function showToast(message) {
-    const toast = $("toast");
-    toast.textContent = message;
-    toast.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+function cleanCode(text) {
+  let code = String(text || "").trim();
+  code = code.replace(/^```(?:html)?\s*/i,"").replace(/\s*```$/,"");
+  const lower = code.toLowerCase();
+  const a = lower.indexOf("<!doctype html"), b = lower.indexOf("<html");
+  const start = a >= 0 ? a : b;
+  if (start > 0) code = code.slice(start);
+  return code;
+}
+function updateCode(code) {
+  currentCode = code;
+  $("codeView").textContent = code;
+  $("codeView").style.display = code ? "block" : "none";
+  $("editorPlaceholder").style.display = code ? "none" : "flex";
+  $("lineCount").textContent = code ? code.split("\n").length + " lines" : "0 lines";
+  const p = activeProject();
+  if (p) { p.code = code; p.updatedAt = Date.now(); save(); renderProjects(); }
+}
+function selectProject(id) {
+  if (isGenerating) return toast("Wait until generation finishes.");
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  activeId = id; currentCode = p.code || "";
+  $("fileTitle").textContent = p.name;
+  $("projectNameInput").value = p.name;
+  $("fileMeta").textContent = currentCode ? "HTML · Saved project" : "HTML · Ready to build";
+  $("editorMode").textContent = currentCode ? "Generated HTML" : "Background generation enabled";
+  updateCode(currentCode); traceSet(currentCode); renderProjects();
+}
+function createProject() {
+  if (isGenerating) return toast("Wait until generation finishes.");
+  const p = newProject($("projectNameInput").value.trim() || "Untitled Project");
+  projects.unshift(p); save(); selectProject(p.id); $("promptInput").focus(); toast("Project created.");
+}
+function handleSSEEvent(eventText, onOutput, onError) {
+  let eventName = "message";
+  const data = [];
+  for (const line of eventText.split(/\r?\n/)) {
+    if (line.startsWith("event:")) eventName = line.slice(6).trim();
+    else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /,""));
   }
-  function escapeHTML(value) {
-    return String(value).replace(/[&<>"']/g, char => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    })[char]);
+  const payload = data.join("\n");
+  if (!payload) return;
+  if (eventName === "error") {
+    let message = payload;
+    try { const obj = JSON.parse(payload); message = obj.error || obj.detail || obj.message || message; } catch (_) {}
+    onError(message);
+    return;
   }
-  function saveProjects() {
+  if (eventName === "done") return;
+  if (eventName === "output" || eventName === "message") {
+    let output = payload;
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(projects));
-      $("saveStatus").textContent = "Saved locally";
-    } catch (error) {
-      $("saveStatus").textContent = "Storage unavailable";
-      showToast("Could not save locally. Export your project to keep it.");
-    }
+      const parsed = JSON.parse(payload);
+      if (typeof parsed === "string") output = parsed;
+      else if (parsed && typeof parsed.output === "string") output = parsed.output;
+    } catch (_) {}
+    if (output) onOutput(output);
   }
-  function activeProject() {
-    return projects.find(project => project.id === activeId);
+}
+async function generateCode() {
+  if (isGenerating) return;
+  const prompt = $("promptInput").value.trim();
+  if (!prompt) { $("promptInput").focus(); return toast("Describe what you want to build first."); }
+  if (!activeProject()) {
+    const p = newProject($("projectNameInput").value.trim() || "Untitled Project");
+    projects.unshift(p); activeId = p.id;
   }
-  function setStatus(mode, message) {
-    $("statusText").textContent = message;
-    $("statusDot").className = "status-dot " + (mode || "");
-    $("activityDot").className = "status-dot " + (mode || "");
-    $("liveBadge").textContent = mode === "working" ? "● Generating" :
-      mode === "online" ? "● Complete" : "● Idle";
-  }
-  function setProgress(value) {
-    $("progressFill").style.width = Math.max(0, Math.min(100, value)) + "%";
-  }
-  function renderProjects() {
-    const query = $("searchProjects").value.trim().toLowerCase();
-    const list = $("projectList");
-    const filtered = projects.filter(p => p.name.toLowerCase().includes(query));
-    if (!filtered.length) {
-      list.innerHTML = '<div class="small-note" style="padding:15px 8px">No projects found. Create one to get started.</div>';
-      return;
-    }
-    list.innerHTML = filtered.map(p => `
-      <button class="project-item ${p.id === activeId ? "active" : ""}" data-id="${escapeHTML(p.id)}">
-        <span class="project-icon">⌘</span>
-        <span style="min-width:0"><span class="project-name" style="display:block">${escapeHTML(p.name)}</span>
-        <span class="project-sub">${p.code ? p.code.split("\\n").length + " lines · HTML" : "New project"}</span></span>
-      </button>`).join("");
-    list.querySelectorAll("[data-id]").forEach(button => {
-      button.addEventListener("click", () => selectProject(button.dataset.id));
+  const p = activeProject();
+  const requestedName = $("projectNameInput").value.trim();
+  if (requestedName) p.name = requestedName;
+  $("fileTitle").textContent = p.name;
+  $("fileMeta").textContent = "HTML · Live generation";
+  $("activityTitle").textContent = "Connecting to AI...";
+  $("activityDetail").textContent = "Preparing the live code stream.";
+  $("editorMode").textContent = "Streaming in background";
+  isGenerating = true;
+  $("generateBtn").disabled = $("refreshBtn").disabled = $("exportBtn").disabled = true;
+  $("generateBtn").textContent = "Generating…";
+  setStatus("working","Connecting to AI");
+  progress(3);
+  currentCode = ""; updateCode(""); traceSet("");
+  let received = "", streamError = null;
+
+  try {
+    const response = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Accept":"text/event-stream"},
+      body:JSON.stringify({
+        prompt: prompt + "\n\nDesign style: " + $("styleSelect").value +
+          ". Return a complete, runnable, standalone HTML document with all CSS and JavaScript included. Output code only."
+      })
     });
-  }
-  function selectProject(id) {
-    if (isGenerating) {
-      showToast("Wait for the current generation to finish first.");
-      return;
+    if (!response.ok) {
+      let message = "Generation failed (HTTP " + response.status + ").";
+      try { const e = await response.json(); message = e.error || message; } catch (_) {}
+      throw new Error(message);
     }
-    const project = projects.find(p => p.id === id);
-    if (!project) return;
-    activeId = id;
-    currentCode = project.code || "";
-    $("fileTitle").textContent = project.name;
-    $("projectNameInput").value = project.name;
-    $("fileMeta").textContent = currentCode ? "HTML · Project saved locally" : "HTML · Ready to build";
-    $("codeView").textContent = currentCode;
-    $("codeView").style.display = currentCode ? "block" : "none";
-    $("editorPlaceholder").style.display = currentCode ? "none" : "flex";
-    $("lineCount").textContent = currentCode ? currentCode.split("\n").length + " lines" : "0 lines";
-    $("editorMode").textContent = currentCode ? "Generated HTML" : "Background generation enabled";
-    resetBackground(currentCode);
-    renderProjects();
-  }
-  function createProject(name) {
-    if (isGenerating) return showToast("Wait until generation finishes.");
-    const project = blankProject(name || "Untitled Project");
-    projects.unshift(project);
-    activeId = project.id;
-    saveProjects();
-    selectProject(project.id);
-    $("promptInput").focus();
-    showToast("Project created.");
-  }
-  function resetBackground(code = "") {
-    const pieces = [code.slice(0, 2400), code.slice(2400, 4800), code.slice(4800, 7200)];
-    ["bgCode1","bgCode2","bgCode3"].forEach((id, index) => {
-      const element = $(id);
-      element.textContent = pieces[index] || "// Waiting for code...";
-    });
-  }
-  function appendBackground(text) {
-    // Append each arriving stream chunk to the three background trace panes.
-    const parts = [text.slice(0, 100), text.slice(100, 200), text.slice(200)];
-    ["bgCode1","bgCode2","bgCode3"].forEach((id, index) => {
-      const el = $(id);
-      if (el.textContent.startsWith("// Waiting") || el.textContent.startsWith("// AI code") || el.textContent.startsWith("// Live generation")) {
-        el.textContent = "";
-      }
-      el.textContent += parts[index] || "";
-      if (el.textContent.length > 6500) el.textContent = el.textContent.slice(-5200);
-      el.scrollTop = el.scrollHeight;
-    });
-  }
-  function cleanCode(code) {
-    let output = String(code || "").trim();
-    output = output.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/, "");
-    const firstTag = output.toLowerCase().indexOf("<!doctype html");
-    const firstHtml = output.toLowerCase().indexOf("<html");
-    const start = firstTag >= 0 ? firstTag : firstHtml;
-    if (start > 0) output = output.slice(start);
-    return output;
-  }
-  function updateGeneratedCode(code) {
-    currentCode = code;
-    $("codeView").textContent = code;
-    $("codeView").style.display = "block";
-    $("editorPlaceholder").style.display = "none";
-    $("lineCount").textContent = code ? code.split("\n").length + " lines" : "0 lines";
-    const project = activeProject();
-    if (project) {
-      project.code = code;
-      project.updatedAt = Date.now();
-      saveProjects();
-      renderProjects();
-    }
-  }
+    if (!response.body) throw new Error("Streaming is not supported by this connection.");
 
-  async function generateCode() {
-    if (isGenerating) return;
-    const prompt = $("promptInput").value.trim();
-    if (!prompt) {
-      $("promptInput").focus();
-      return showToast("Describe the app you want to build first.");
-    }
-    if (!activeProject()) createProject($("projectNameInput").value.trim() || "Untitled Project");
-    const project = activeProject();
-    const requestedName = $("projectNameInput").value.trim();
-    if (requestedName) project.name = requestedName;
-    $("fileTitle").textContent = project.name;
-    $("fileMeta").textContent = "HTML · Streaming generation";
-    isGenerating = true;
-    $("generateBtn").disabled = true;
-    $("refreshBtn").disabled = true;
-    $("exportBtn").disabled = true;
-    $("generateBtn").textContent = "Generating…";
-    $("activityTitle").textContent = "AI is writing your code";
-    $("activityDetail").textContent = "Receiving real-time output. Watch the translucent background trace panels.";
-    $("editorMode").textContent = "Streaming in background";
-    setStatus("working", "Writing code live");
-    setProgress(3);
-    currentCode = "";
-    updateGeneratedCode("");
-    resetBackground("");
-    let received = "";
-    let sawData = false;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
-        body: JSON.stringify({
-          prompt: prompt + "\n\nDesign style: " + $("styleSelect").value +
-            ". Return one complete, runnable HTML document including CSS and JavaScript. Output code only. Do not use markdown fences."
-        })
-      });
-      if (!response.ok) {
-        let message = "Generation failed (" + response.status + ").";
-        try {
-          const errorBody = await response.json();
-          if (errorBody.error) message = errorBody.error;
-        } catch (_) {}
-        throw new Error(message);
-      }
-      if (!response.body) throw new Error("Your browser could not read the stream. Try refreshing the page.");
+    const onOutput = chunk => {
+      received += chunk;
+      // This happens for each output event, while generation is still running.
+      traceAppend(chunk);
+      updateCode(cleanCode(received));
+      progress(Math.min(95, 7 + received.length / 200));
+      $("activityTitle").textContent = "AI is writing code live";
+      $("activityDetail").textContent = received.length.toLocaleString() + " characters received. Watch the background panels.";
+      setStatus("working","Writing code live");
+    };
+    const onError = message => { streamError = message; };
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split(/\r?\n\r?\n/);
-        buffer = events.pop() || "";
-        for (const eventText of events) {
-          const lines = eventText.split(/\r?\n/);
-          let eventName = "message";
-          let data = [];
-          for (const line of lines) {
-            if (line.startsWith("event:")) eventName = line.slice(6).trim();
-            else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""));
-          }
-          const payload = data.join("\n");
-          if (eventName === "error") {
-            let message = payload || "The AI stream returned an error.";
-            try { message = JSON.parse(payload).error || message; } catch (_) {}
-            throw new Error(message);
-          }
-          if (eventName === "done") continue;
-          if (eventName === "output" || eventName === "message") {
-            if (!payload) continue;
-            sawData = true;
-            received += payload;
-            appendBackground(payload);
-            const cleaned = cleanCode(received);
-            updateGeneratedCode(cleaned);
-            // Progress is indicative only; the model does not report a true percentage.
-            setProgress(Math.min(94, 8 + received.length / 180));
-            $("activityDetail").textContent =
-              "Streaming " + received.length.toLocaleString() + " characters · code is arriving live.";
-          }
-        }
-      }
-      if (buffer.trim()) {
-        const match = buffer.match(/^data:\s?(.*)$/m);
-        if (match && match[1]) {
-          received += match[1];
-          appendBackground(match[1]);
-        }
-      }
-      const finalCode = cleanCode(received);
-      if (!sawData || !finalCode) throw new Error("The model returned no code. Please try a more specific prompt.");
-      updateGeneratedCode(finalCode);
-      project.code = finalCode;
-      project.updatedAt = Date.now();
-      saveProjects();
-      $("fileMeta").textContent = "HTML · Generated just now";
-      $("activityTitle").textContent = "Code generated successfully";
-      $("activityDetail").textContent = "Your code is saved locally. Preview it or export it as a standalone HTML file.";
-      $("editorMode").textContent = "Generation complete";
-      setProgress(100);
-      setStatus("online", "Ready to preview");
-      renderProjects();
-      showToast("Code generated successfully.");
-    } catch (error) {
-      console.error(error);
-      $("activityTitle").textContent = "Generation could not finish";
-      $("activityDetail").textContent = error.message || "Check your Vercel deployment and API token.";
-      setStatus("", "Generation error");
-      showToast(error.message || "Generation failed. Check your Vercel logs.");
-      if (received) {
-        updateGeneratedCode(cleanCode(received));
-        $("activityDetail").textContent += " Partial output is preserved in the editor.";
-      }
-    } finally {
-      isGenerating = false;
-      $("generateBtn").disabled = false;
-      $("refreshBtn").disabled = false;
-      $("exportBtn").disabled = false;
-      $("generateBtn").textContent = "✦ Generate code";
-      if ($("progressFill").style.width !== "100%") setProgress(0);
+    while (true) {
+      const {value,done} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value,{stream:true});
+      const events = buffer.split(/\r?\n\r?\n/);
+      buffer = events.pop() || "";
+      for (const event of events) handleSSEEvent(event,onOutput,onError);
+      if (streamError) throw new Error(streamError);
     }
-  }
+    buffer += decoder.decode();
+    if (buffer.trim()) handleSSEEvent(buffer,onOutput,onError);
+    if (streamError) throw new Error(streamError);
 
-  function previewCode() {
-    const code = currentCode || (activeProject() && activeProject().code) || "";
-    if (!code.trim()) return showToast("Generate an app first.");
-    const preview = window.open("", "_blank");
-    if (!preview) return showToast("Allow pop-ups to open the preview.");
-    preview.document.open();
-    preview.document.write(code);
-    preview.document.close();
-  }
-  function refreshPreview() {
-    const code = currentCode || (activeProject() && activeProject().code) || "";
-    if (!code.trim()) {
-      resetBackground("");
-      $("activityTitle").textContent = "Ready for your idea";
-      $("activityDetail").textContent = "No generated code to refresh yet. Describe an app and click Generate code.";
-      showToast("Nothing to refresh yet. Generate a project first.");
-      return;
-    }
-    updateGeneratedCode(code);
-    resetBackground(code);
-    $("fileMeta").textContent = "HTML · Preview refreshed";
-    $("activityTitle").textContent = "Project refreshed";
-    $("activityDetail").textContent = "The editor has been refreshed from your saved project code. Use Preview to run the app.";
-    setStatus("online", "Project refreshed");
-    showToast("Project refreshed.");
-  }
-  function exportCode() {
-    const code = currentCode || (activeProject() && activeProject().code) || "";
-    if (!code.trim()) return showToast("Generate some code before exporting.");
-    const project = activeProject();
-    const safeName = (project?.name || "my-app").replace(/[^a-z0-9-_]/gi, "-").toLowerCase();
-    const blob = new Blob([code], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = safeName + ".html";
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    showToast("HTML file exported.");
-  }
-  async function copyCode() {
-    const code = currentCode || (activeProject() && activeProject().code) || "";
-    if (!code) return showToast("There is no code to copy yet.");
-    try {
-      await navigator.clipboard.writeText(code);
-      showToast("Code copied to clipboard.");
-    } catch (_) {
-      const area = document.createElement("textarea");
-      area.value = code; document.body.appendChild(area); area.select();
-      document.execCommand("copy"); area.remove();
-      showToast("Code copied.");
-    }
-  }
+    const finalCode = cleanCode(received);
+    if (!finalCode) throw new Error("The stream finished without HTML. Check the Vercel function logs and Replicate model output.");
 
-  function loadProjects() {
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-      if (Array.isArray(stored)) projects = stored.filter(p => p && p.id && typeof p.name === "string");
-    } catch (_) { projects = []; }
-    if (!projects.length) {
-      const project = blankProject("My First Project");
-      projects.push(project);
-    }
-    activeId = projects[0].id;
-    selectProject(activeId);
+    updateCode(finalCode);
+    p.code = finalCode; p.updatedAt = Date.now(); save(); renderProjects();
+    $("fileMeta").textContent = "HTML · Generated just now";
+    $("activityTitle").textContent = "Code generated successfully";
+    $("activityDetail").textContent = "Your app is saved locally. Preview it or export the HTML file.";
+    $("editorMode").textContent = "Generation complete";
+    setStatus("online","Ready to preview"); progress(100); toast("Your app is ready!");
+  } catch (error) {
+    console.error("Code Studio generation:",error);
+    $("activityTitle").textContent = "Generation failed";
+    $("activityDetail").textContent = error.message || "Check Vercel logs and your Replicate token.";
+    setStatus("","Generation error");
+    if (received) updateCode(cleanCode(received));
+    toast(error.message || "Generation failed.");
+  } finally {
+    isGenerating = false;
+    $("generateBtn").disabled = $("refreshBtn").disabled = $("exportBtn").disabled = false;
+    $("generateBtn").textContent = "✦ Generate code";
+    if ($("progressFill").style.width !== "100%") progress(0);
   }
+}
+function previewCode() {
+  const code = currentCode || activeProject()?.code || "";
+  if (!code.trim()) return toast("Generate an app first.");
+  const win = window.open("about:blank","_blank");
+  if (!win) return toast("Allow pop-ups to open the preview.");
+  win.document.open(); win.document.write(code); win.document.close();
+}
+function refreshProject() {
+  const code = currentCode || activeProject()?.code || "";
+  if (!code) {
+    traceSet("");
+    $("activityTitle").textContent = "Ready for your idea";
+    $("activityDetail").textContent = "No code to refresh yet. Generate an app first.";
+    return toast("Nothing to refresh yet.");
+  }
+  updateCode(code); traceSet(code);
+  $("fileMeta").textContent = "HTML · Refreshed";
+  $("activityTitle").textContent = "Project refreshed";
+  $("activityDetail").textContent = "The editor and background display were refreshed.";
+  setStatus("online","Project refreshed"); toast("Project refreshed.");
+}
+function exportCode() {
+  const code = currentCode || activeProject()?.code || "";
+  if (!code.trim()) return toast("Generate code before exporting.");
+  const name = (activeProject()?.name || "my-app").replace(/[^a-z0-9-_]/gi,"-").toLowerCase();
+  const url = URL.createObjectURL(new Blob([code],{type:"text/html;charset=utf-8"}));
+  const a = document.createElement("a"); a.href = url; a.download = name + ".html";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000);
+  toast("HTML file exported.");
+}
+async function copyCode() {
+  const code = currentCode || activeProject()?.code || "";
+  if (!code) return toast("There is no code to copy.");
+  try { await navigator.clipboard.writeText(code); }
+  catch (_) {
+    const area = document.createElement("textarea"); area.value = code;
+    document.body.appendChild(area); area.select(); document.execCommand("copy"); area.remove();
+  }
+  toast("Code copied.");
+}
+function loadProjects() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORE) || "[]");
+    if (Array.isArray(data)) projects = data.filter(p => p && p.id && typeof p.name === "string");
+  } catch (_) { projects = []; }
+  if (!projects.length) projects = [newProject("My First Project")];
+  activeId = projects[0].id;
+  selectProject(activeId);
+}
 
-  $("generateBtn").addEventListener("click", generateCode);
-  $("refreshBtn").addEventListener("click", refreshPreview);
-  $("previewBtn").addEventListener("click", previewCode);
-  $("exportBtn").addEventListener("click", exportCode);
-  $("copyBtn").addEventListener("click", copyCode);
-  $("newProjectBtn").addEventListener("click", () => createProject());
-  $("sidebarNewBtn").addEventListener("click", () => createProject());
-  $("searchProjects").addEventListener("input", renderProjects);
-  $("clearPromptBtn").addEventListener("click", () => { $("promptInput").value = ""; $("promptInput").focus(); });
-  $("projectNameInput").addEventListener("change", () => {
-    const project = activeProject();
-    if (!project) return;
-    const name = $("projectNameInput").value.trim();
-    if (name) { project.name = name; $("fileTitle").textContent = name; saveProjects(); renderProjects(); }
-  });
-  $("promptInput").addEventListener("keydown", event => {
-    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-      event.preventDefault(); generateCode();
-    }
-  });
-  document.querySelectorAll("[data-prompt]").forEach(button => {
-    button.addEventListener("click", () => {
-      $("promptInput").value = button.dataset.prompt;
-      $("promptInput").focus();
-    });
-  });
-  loadProjects();
+$("generateBtn").addEventListener("click",generateCode);
+$("refreshBtn").addEventListener("click",refreshProject);
+$("previewBtn").addEventListener("click",previewCode);
+$("exportBtn").addEventListener("click",exportCode);
+$("copyBtn").addEventListener("click",copyCode);
+$("newProjectBtn").addEventListener("click",createProject);
+$("sidebarNewBtn").addEventListener("click",createProject);
+$("searchProjects").addEventListener("input",renderProjects);
+$("clearPromptBtn").addEventListener("click",() => {$("promptInput").value="";$("promptInput").focus();});
+$("projectNameInput").addEventListener("change",() => {
+  const p = activeProject(), name = $("projectNameInput").value.trim();
+  if (p && name) {p.name=name;$("fileTitle").textContent=name;save();renderProjects();}
+});
+$("promptInput").addEventListener("keydown",e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {e.preventDefault();generateCode();}
+});
+document.querySelectorAll("[data-prompt]").forEach(button => button.addEventListener("click",() => {
+  $("promptInput").value = button.dataset.prompt; $("promptInput").focus();
+}));
+loadProjects();
 })();
 </script>
 </body>
