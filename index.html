@@ -1,1171 +1,869 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Code Studio — AI Workspace</title>
+<title>Code Studio</title>
 <style>
-:root{
-  --bg:#090b12;
-  --panel:rgba(255,255,255,.065);
-  --border:rgba(255,255,255,.11);
-  --muted:#8e98ad;
-  --text:#f3f5ff;
-  --blue:#7c8cff;
-  --purple:#bd91ff;
-  --green:#6ee7b7;
-  --red:#ff737d;
+:root {
+  --glass: rgba(30,30,32,.73);
+  --glass2: rgba(20,20,22,.78);
+  --line: rgba(255,255,255,.12);
+  --text: #f5f5f7;
+  --muted: #a3a3aa;
+  --accent: #b8a0ff;
 }
-*{box-sizing:border-box}
-body{
-  margin:0;min-height:100vh;color:var(--text);
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font: 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:
-    radial-gradient(ellipse at 12% 0%,#28336a 0%,transparent 37%),
-    radial-gradient(ellipse at 100% 90%,#39214e 0%,transparent 35%),
-    var(--bg);
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  font-size:14px;
+    radial-gradient(ellipse at 15% 0%, #46352d 0, transparent 38%),
+    radial-gradient(ellipse at 90% 15%, #282d3c 0, transparent 35%),
+    linear-gradient(135deg,#101012,#171513 48%,#101114);
+  overflow: hidden;
 }
-button,input,textarea,select{font:inherit}
-button{cursor:pointer;color:inherit}
-button:focus-visible,input:focus-visible,textarea:focus-visible{
-  outline:2px solid var(--blue);outline-offset:2px
+button,input,textarea,select { font: inherit; }
+button {
+  color: inherit;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.055);
+  border-radius: 11px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: background .2s, transform .2s, border-color .2s;
 }
-.app{min-height:100vh;padding:15px;display:flex;flex-direction:column;gap:13px}
-.glass{
-  background:var(--panel);border:1px solid var(--border);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  box-shadow:0 12px 40px #00000018;
+button:hover {
+  background: rgba(255,255,255,.13);
+  border-color: rgba(255,255,255,.25);
+  transform: translateY(-1px);
 }
-.topbar{
-  min-height:64px;border-radius:22px;padding:12px 18px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+button:disabled { opacity:.5; cursor:wait; transform:none; }
+input,textarea,select {
+  width:100%;
+  background:rgba(0,0,0,.28);
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:11px 12px;
+  outline:none;
 }
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.logo{
-  width:39px;height:39px;border-radius:13px;
-  display:grid;place-items:center;font-size:21px;
-  background:linear-gradient(135deg,#8597ff,#bd86ff);
-  box-shadow:0 5px 22px #8793ff35;
+input:focus,textarea:focus,select:focus {
+  border-color:rgba(184,160,255,.65);
 }
-.brand h1{font-size:16px;margin:0 0 3px;letter-spacing:-.4px}
-.brand small{font-size:11px;color:var(--muted)}
-.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{
-  padding:10px 13px;border-radius:12px;border:1px solid var(--border);
-  background:rgba(255,255,255,.055);transition:.2s;
-}
-.btn:hover{background:rgba(255,255,255,.13);transform:translateY(-1px)}
-.btn.primary{
-  border:0;background:linear-gradient(120deg,#7187ff,#a783f5);
-  color:white;font-weight:650;
-}
-.btn.primary:hover{filter:brightness(1.12)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.layout{
-  display:grid;grid-template-columns:225px minmax(0,1fr) 295px;
-  gap:13px;flex:1;min-height:calc(100vh - 110px);
-}
-.sidebar,.workspace,.rightbar{border-radius:22px;min-width:0}
-.sidebar,.rightbar{padding:15px}
-.section-label{
-  color:var(--muted);font-size:10px;font-weight:800;
-  letter-spacing:1.5px;text-transform:uppercase;margin:8px 0 13px;
-}
-.side-button{
-  width:100%;padding:11px 12px;display:flex;align-items:center;
-  gap:10px;border:1px solid transparent;border-radius:12px;
-  background:transparent;text-align:left;color:#cbd0df;margin-bottom:4px;
-}
-.side-button:hover,.side-button.active{
-  background:rgba(136,150,255,.12);
-  border-color:rgba(136,150,255,.19);color:white;
-}
-.side-button .ico{font-size:17px;width:21px;text-align:center}
-.side-button .plus{margin-left:auto;color:var(--muted)}
-.project-list{display:flex;flex-direction:column;gap:5px}
-.project-item{
-  padding:10px;border-radius:12px;display:flex;gap:9px;
-  align-items:center;cursor:pointer;border:1px solid transparent;
-  color:#d3d7e5;min-width:0;
-}
-.project-item:hover,.project-item.active{
-  background:#ffffff0b;border-color:var(--border)
-}
-.project-icon{font-size:18px}
-.project-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.project-delete{border:0;background:none;color:var(--muted);opacity:0}
-.project-item:hover .project-delete{opacity:1}
-.project-delete:hover{color:var(--red)}
-.sidebar-bottom{margin-top:22px;border-top:1px solid var(--border);padding-top:15px}
-.mini-note{font-size:11px;color:var(--muted);line-height:1.7;padding:5px}
-.workspace{display:flex;flex-direction:column;overflow:hidden}
-.work-head{
-  padding:14px 17px;display:flex;align-items:center;
-  justify-content:space-between;gap:10px;border-bottom:1px solid var(--border);
-}
-.file-info{display:flex;align-items:center;gap:10px;min-width:0}
-.file-icon{font-size:21px}
-.file-title{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-subtitle{font-size:11px;color:var(--muted);margin-top:4px}
-.file-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-.small-btn{
-  padding:8px 10px;border-radius:10px;background:#ffffff08;
-  border:1px solid var(--border);font-size:12px;
-}
-.small-btn:hover{background:#ffffff16}
-.tabs{
-  display:flex;gap:3px;padding:9px 13px;
-  border-bottom:1px solid var(--border);overflow-x:auto;
-}
-.tab{
-  border:0;background:transparent;color:var(--muted);
-  padding:9px 12px;border-radius:9px;white-space:nowrap;
-}
-.tab.active{color:white;background:#ffffff10}
-.editor-shell{
-  flex:1;min-height:360px;position:relative;background:#080b12;
+textarea { resize:vertical; }
+::placeholder { color:#85858d; }
+#ambientCode {
+  position:fixed;
+  inset:0;
+  z-index:-1;
   overflow:hidden;
+  pointer-events:none;
+  opacity:.62;
 }
-.editor-top{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:10px 15px;background:#ffffff04;border-bottom:1px solid #ffffff0a;
-  color:var(--muted);font-size:11px;
+.code-rain {
+  position:absolute;
+  width:44vw;
+  min-width:340px;
+  height:80vh;
+  overflow:hidden;
+  padding:25px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:25px;
+  background:linear-gradient(135deg,rgba(0,0,0,.48),rgba(76,57,43,.18));
+  box-shadow:0 20px 90px #0005,inset 0 1px #ffffff0b;
+  backdrop-filter:blur(3px);
+  transform:rotate(-7deg);
+  mask-image:linear-gradient(to bottom,black,transparent 95%);
 }
-.editor-scroll{position:absolute;inset:37px 0 0;overflow:auto}
-.code-area{
-  position:relative;min-width:100%;width:max-content;min-height:100%;
-  display:flex;font:13px/1.8 "SFMono-Regular",Consolas,monospace;
-  tab-size:2;
+.code-rain pre {
+  margin:0;
+  white-space:pre;
+  line-height:1.9;
+  font:12px/1.9 ui-monospace,SFMono-Regular,Consolas,monospace;
+  color:#92877e;
+  text-shadow:0 0 15px #000;
 }
-.line-numbers{
-  width:49px;flex-shrink:0;text-align:right;padding:15px 12px 40px 0;
-  color:#555e72;white-space:pre;user-select:none;
-  border-right:1px solid #ffffff09;
+.code-rain.one { top:9%;left:-15%; }
+.code-rain.two {
+  top:27%;right:-16%;
+  transform:rotate(8deg);
+  background:linear-gradient(135deg,rgba(20,20,20,.48),rgba(48,43,40,.25));
 }
-.editor-stack{position:relative;flex:1;min-width:0}
-.code-highlight,.code-input{
-  margin:0;padding:15px 18px 40px;width:100%;min-height:100%;
-  font:inherit;line-height:1.8;letter-spacing:normal;
-  white-space:pre;tab-size:2;
+.code-rain.three {
+  bottom:-54%;left:26%;
+  transform:rotate(2deg);
 }
-.code-highlight{
-  position:absolute;inset:0;color:#d7deef;
-  pointer-events:none;overflow:visible;
+.app {
+  height:calc(100vh - 30px);
+  margin:15px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:23px;
+  overflow:hidden;
+  background:rgba(19,19,21,.63);
+  backdrop-filter:blur(26px) saturate(125%);
+  box-shadow:0 25px 100px #0008,inset 0 1px #ffffff0b;
 }
-.code-input{
-  display:block;position:relative;resize:none;border:0;outline:0;
-  background:transparent;color:transparent;caret-color:#fff;
-  overflow:hidden;min-width:900px;
+.topbar {
+  min-height:59px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 17px;
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.025);
 }
-.code-input::selection{background:#7187ff55;color:transparent}
-.token-tag{color:#ff9aab}
-.token-attr{color:#d7bdff}
-.token-string{color:#a8e6ad}
-.token-keyword{color:#c5a0ff}
-.token-number{color:#ffcf8a}
-.token-comment{color:#75819b;font-style:italic}
-.error-word{
-  color:#ff8088;
-  background:#ff33451a;
-  text-decoration:underline wavy #ff6677;
-  text-underline-offset:4px;
+.traffic { display:flex;gap:7px;margin-right:6px; }
+.traffic span { width:11px;height:11px;border-radius:50%; }
+.traffic span:nth-child(1){background:#ff6058}
+.traffic span:nth-child(2){background:#ffbd2e}
+.traffic span:nth-child(3){background:#28c840}
+.brand { font-weight:700;letter-spacing:.2px; }
+.project-name { color:var(--muted);font-size:12px; }
+.top-spacer { flex:1; }
+.status { color:#b4d8ad;font-size:12px;display:flex;align-items:center;gap:7px; }
+.status i { width:7px;height:7px;background:#8ad58b;border-radius:50%; }
+.workspace {
+  min-height:0;flex:1;
+  display:grid;
+  grid-template-columns:205px minmax(320px,1fr) minmax(265px,315px);
 }
-.statusbar{
-  display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
-  padding:10px 14px;border-top:1px solid var(--border);
-  color:var(--muted);font-size:11px;
+.panel { min-width:0;min-height:0;background:rgba(255,255,255,.018); }
+.sidebar {
+  border-right:1px solid var(--line);
+  padding:15px 12px;
+  overflow:auto;
 }
-.status-left,.status-right{display:flex;gap:13px;flex-wrap:wrap}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px}
-.rightbar{display:flex;flex-direction:column;gap:15px}
-.ai-heading{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.ai-avatar{
-  width:39px;height:39px;border-radius:14px;display:grid;place-items:center;
-  background:linear-gradient(135deg,#7789ff44,#bc8bff35);font-size:20px;
+.rightbar {
+  border-left:1px solid var(--line);
+  padding:16px 13px;
+  overflow:auto;
+  background:rgba(0,0,0,.13);
 }
-.ai-heading h2{font-size:15px;margin:0 0 4px}
-.ai-heading p{margin:0;color:var(--muted);font-size:11px}
-.ai-status{
-  display:inline-flex;align-items:center;gap:7px;font-size:11px;
-  color:var(--green);margin:0 0 3px;
+.section-label {
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:#92929a;font-weight:700;margin:8px 7px 12px;
 }
-.ai-status .dot{margin:0}
-.prompt-label{display:block;font-size:12px;font-weight:650;margin-bottom:9px}
-.prompt-box{
-  width:100%;min-height:126px;resize:vertical;color:white;
-  background:#06091288;border:1px solid var(--border);border-radius:14px;
-  padding:13px;outline:0;line-height:1.65;
+.full { width:100%;text-align:left;margin-bottom:7px; }
+.primary {
+  background:linear-gradient(135deg,#b5a0f5,#8d78cf);
+  color:#17131f;border:0;font-weight:700;
 }
-.prompt-box:focus{border-color:#8594ff88}
-.prompt-box::placeholder{color:#737d94}
-.ai-controls{display:flex;gap:7px;margin-top:9px}
-.ai-controls .btn{flex:1}
-.hint{font-size:11px;color:var(--muted);line-height:1.7}
-.quick-prompts{display:flex;flex-wrap:wrap;gap:7px}
-.chip{
-  border:1px solid var(--border);background:#ffffff07;
-  border-radius:30px;padding:8px 10px;font-size:11px;color:#d4d8e7;
+.primary:hover { background:linear-gradient(135deg,#cbbcff,#a18be9); }
+.project-list { display:flex;flex-direction:column;gap:5px;margin-top:10px; }
+.project-item {
+  display:flex;align-items:center;gap:9px;padding:10px;
+  border-radius:11px;cursor:pointer;color:#bcbcc4;
+  border:1px solid transparent;overflow:hidden;
 }
-.chip:hover{background:#ffffff14}
-.divider{height:1px;background:var(--border)}
-.feature-card{
-  padding:12px;border-radius:14px;border:1px solid var(--border);
-  background:#ffffff05;margin-top:8px;
+.project-item:hover,.project-item.active {
+  background:rgba(255,255,255,.075);border-color:var(--line);color:white;
 }
-.feature-card strong{display:block;font-size:12px;margin-bottom:5px}
-.feature-card p{margin:0;font-size:11px;color:var(--muted);line-height:1.6}
-.activity{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted);line-height:1.6}
-.activity-icon{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#ffffff0b}
-.preview-frame{
-  width:100%;height:100%;min-height:450px;border:0;background:white;
+.project-item span:last-child {
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.preview-empty{
-  min-height:450px;height:100%;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;text-align:center;
-  color:#dce2f5;padding:30px;
-  background:radial-gradient(ellipse at top,#20294b,#0b0e17 65%);
+.project-icon { font-size:16px; }
+.center {
+  min-height:0;display:flex;flex-direction:column;overflow:hidden;
 }
-.preview-empty .big-icon{font-size:48px;margin-bottom:15px}
-.preview-empty h3{margin:0 0 8px}
-.preview-empty p{color:var(--muted);max-width:330px;line-height:1.7;font-size:12px}
-.preview-empty .btn{margin-top:10px}
-.toast{
-  position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);
-  background:#20263a;border:1px solid #ffffff20;padding:12px 18px;
-  border-radius:14px;box-shadow:0 10px 35px #0008;opacity:0;
-  pointer-events:none;transition:.25s;z-index:20;font-size:12px;
+.center-head {
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);
 }
-.toast.show{opacity:1;transform:translate(-50%,0)}
-.overlay{
-  position:fixed;inset:0;background:#03040ac9;backdrop-filter:blur(9px);
-  z-index:30;display:none;align-items:center;justify-content:center;padding:20px;
+.tabs { display:flex;gap:6px; }
+.tab { font-size:12px;padding:7px 11px;color:#a9a9b1; }
+.tab.active { background:rgba(184,160,255,.15);color:#e5dafa;border-color:#b8a0ff35; }
+.editor-shell {
+  position:relative;flex:1;min-height:0;overflow:auto;
+  background:rgba(0,0,0,.18);
 }
-.overlay.show{display:flex}
-.modal{
-  width:min(440px,100%);padding:22px;border-radius:22px;
-  background:#151a2a;border:1px solid var(--border);
-  box-shadow:0 25px 80px #0008;
+.editor-empty {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:25px;color:#a5a5ad;pointer-events:none;
 }
-.modal h2{font-size:18px;margin:0 0 7px}
-.modal p{font-size:12px;color:var(--muted);line-height:1.6}
-.modal input,.modal select{
-  width:100%;padding:12px;margin:8px 0 14px;color:white;
-  background:#090d18;border:1px solid var(--border);border-radius:11px;
+.editor-empty strong { color:#dedee5;display:block;font-size:18px;margin-bottom:9px; }
+#codeView {
+  display:none;min-height:100%;margin:0;padding:19px 18px 30px;
+  white-space:pre;tab-size:2;overflow:visible;
+  font:12px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace;
+  color:#c7bdb4;
 }
-.modal select option{background:#11172a}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-#projectImport{display:none}
-@media(max-width:1150px){
-  .layout{grid-template-columns:195px minmax(0,1fr)}
-  .rightbar{grid-column:1/-1}
+#codeView .kw {color:#c2a5ff}
+#codeView .str {color:#d6b18b}
+#codeView .tag {color:#e6a78e}
+#codeView .comment {color:#827b75}
+#codeView .num {color:#b7c5a3}
+.editor-status {
+  min-height:30px;padding:6px 14px;border-top:1px solid var(--line);
+  display:flex;align-items:center;gap:13px;font-size:11px;color:#92929a;
 }
-@media(max-width:700px){
-  .app{padding:8px}
-  .topbar{padding:12px;border-radius:17px;align-items:flex-start}
-  .brand small{display:none}
-  .layout{grid-template-columns:1fr;min-height:auto}
-  .sidebar{order:2}
-  .workspace{order:1;min-height:650px}
-  .rightbar{order:3;grid-column:auto}
-  .sidebar{padding:12px}
-  .project-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .sidebar-bottom{margin-top:12px}
-  .editor-shell{min-height:420px}
-  .top-actions .btn{padding:9px}
+.editor-status span:last-child { margin-left:auto; }
+.preview-shell { display:none;flex:1;min-height:0;background:#f4f4f5; }
+.preview-shell iframe { width:100%;height:100%;border:0;background:white; }
+.preview-empty {
+  flex:1;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:25px;color:#9d9da5;
+}
+.preview-empty strong {display:block;color:#e5e5e9;margin-bottom:8px;font-size:17px;}
+.bottom-tools {
+  display:flex;gap:7px;flex-wrap:wrap;padding:10px 14px;
+  border-top:1px solid var(--line);
+}
+.small-btn { font-size:11px;padding:7px 9px; }
+.feature-card {
+  border:1px solid var(--line);background:rgba(255,255,255,.035);
+  border-radius:15px;padding:13px;margin-bottom:10px;
+}
+.feature-card h3 {font-size:13px;margin:0 0 7px;}
+.feature-card p {font-size:11px;line-height:1.6;color:#a6a6ae;margin:0 0 10px;}
+.prompt-chips {display:flex;flex-wrap:wrap;gap:6px;margin:9px 0 12px;}
+.chip {font-size:10px;padding:7px 9px;border-radius:999px;color:#c7c1d7;}
+#prompt {min-height:125px;line-height:1.6;margin-bottom:9px;}
+.row {display:flex;gap:7px;align-items:center;}
+.row>* {min-width:0;}
+.row button {white-space:nowrap;}
+.hint {font-size:11px;line-height:1.6;color:#888891;margin-top:9px;}
+#message {
+  font-size:11px;line-height:1.5;color:#d8c3a9;margin-top:9px;
+  overflow-wrap:anywhere;
+}
+#message.error {color:#ffaaa4}
+#message.success {color:#b4dfa9}
+.progress {height:3px;background:#ffffff12;border-radius:9px;overflow:hidden;margin-top:10px;display:none;}
+.progress div {height:100%;width:0;background:linear-gradient(90deg,#c0a5ff,#b99b78);transition:width .3s;}
+.modal-backdrop {
+  position:fixed;inset:0;z-index:10;background:#0009;backdrop-filter:blur(9px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal {
+  width:min(430px,100%);padding:22px;border-radius:20px;
+  border:1px solid var(--line);background:#252326;
+  box-shadow:0 30px 100px #0009;
+}
+.modal h2 {margin:0 0 8px;font-size:18px;}
+.modal p {color:var(--muted);font-size:12px;line-height:1.6;}
+.modal label {display:block;font-size:12px;margin:14px 0 7px;}
+.modal-actions {display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+#toast {
+  position:fixed;bottom:24px;left:50%;transform:translate(-50%,15px);
+  background:#29272b;border:1px solid var(--line);border-radius:12px;
+  padding:11px 16px;color:white;opacity:0;pointer-events:none;
+  transition:.25s;z-index:20;box-shadow:0 10px 35px #0007;
+}
+#toast.show {opacity:1;transform:translate(-50%,0);}
+@media(max-width:1000px) {
+  .workspace {grid-template-columns:170px minmax(280px,1fr);}
+  .rightbar {display:none;}
+}
+@media(max-width:650px) {
+  body {overflow:auto;}
+  .app {height:auto;min-height:calc(100vh - 16px);margin:8px;border-radius:18px;}
+  .topbar {padding:0 10px;flex-wrap:wrap;}
+  .workspace {display:flex;flex-direction:column;overflow:visible;}
+  .sidebar {border-right:0;border-bottom:1px solid var(--line);max-height:160px;}
+  .sidebar .section-label {margin-top:2px;}
+  .project-list {flex-direction:row;overflow:auto;}
+  .project-item {min-width:130px;}
+  .center {min-height:500px;}
+  .rightbar {display:block;border-left:0;border-top:1px solid var(--line);}
+  .status {display:none;}
+  .editor-shell {min-height:300px;}
+  .preview-shell {min-height:300px;}
 }
 </style>
 </head>
 <body>
+<div id="ambientCode" aria-hidden="true">
+  <div class="code-rain one"><pre id="bgCode1"></pre></div>
+  <div class="code-rain two"><pre id="bgCode2"></pre></div>
+  <div class="code-rain three"><pre id="bgCode3"></pre></div>
+</div>
+
 <div class="app">
-  <header class="topbar glass">
-    <div class="brand">
-      <div class="logo">⌘</div>
-      <div>
-        <h1>Code Studio</h1>
-        <small>Your ideas, turned into working code.</small>
-      </div>
-    </div>
-    <div class="top-actions">
-      <button class="btn" id="importBtn">↥ Import</button>
-      <button class="btn" id="exportBtn">↧ Export</button>
-      <button class="btn primary" id="newProjectTop">＋ New project</button>
-    </div>
+  <header class="topbar">
+    <div class="traffic"><span></span><span></span><span></span></div>
+    <div class="brand">⌘ Code Studio</div>
+    <div class="project-name" id="topProjectName">/ Untitled Project</div>
+    <div class="top-spacer"></div>
+    <div class="status"><i></i><span id="statusText">Ready</span></div>
+    <button id="newProjectBtn" title="Create a new project">＋ New</button>
+    <button id="settingsBtn" title="Settings">⚙</button>
   </header>
 
-  <main class="layout">
-    <aside class="sidebar glass">
+  <div class="workspace">
+    <aside class="sidebar panel">
+      <button class="primary full" id="newProjectSide">＋ New Project</button>
       <div class="section-label">Workspace</div>
-      <button class="side-button active" id="allProjectsBtn">
-        <span class="ico">▦</span> All projects
-      </button>
-      <button class="side-button" id="newProjectSide">
-        <span class="ico">＋</span> New project <span class="plus">↗</span>
-      </button>
-      <button class="side-button" id="openPreviewSide">
-        <span class="ico">◉</span> Live preview
-      </button>
-
-      <div class="section-label" style="margin-top:25px">Your projects</div>
+      <button class="full" id="importBtn">↥ Import HTML</button>
+      <input type="file" id="importFile" accept=".html,.htm,.txt" hidden>
+      <button class="full" id="exportBtn">↧ Export HTML</button>
+      <div class="section-label" style="margin-top:22px">Your Projects</div>
       <div class="project-list" id="projectList"></div>
-
-      <div class="sidebar-bottom">
-        <div class="section-label">Workspace status</div>
-        <div class="mini-note">
-          <span class="dot"></span> Local workspace ready<br>
-          Projects are saved in this browser.
-        </div>
-        <button class="side-button" id="settingsBtn" style="margin-top:10px">
-          <span class="ico">⚙</span> AI connection
-        </button>
-      </div>
+      <div class="hint">Projects are saved locally in this browser.</div>
     </aside>
 
-    <section class="workspace glass">
-      <div class="work-head">
-        <div class="file-info">
-          <div class="file-icon">🌐</div>
-          <div style="min-width:0">
-            <div class="file-title" id="currentProjectTitle">Welcome Project</div>
-            <div class="file-subtitle" id="currentProjectSubtitle">index.html · HTML project</div>
-          </div>
-        </div>
-        <div class="file-actions">
-          <button class="small-btn" id="saveBtn">Save</button>
-          <button class="small-btn" id="formatBtn">Format</button>
-          <button class="small-btn" id="runBtn">▶ Run</button>
-        </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab active" data-tab="code">⌘ Code editor</button>
-        <button class="tab" data-tab="preview">◉ Preview</button>
-      </div>
-
-      <div id="codeView" class="editor-shell">
-        <div class="editor-top">
-          <span>● &nbsp; index.html</span>
-          <span id="editorState">Ready</span>
-        </div>
-        <div class="editor-scroll" id="editorScroll">
-          <div class="code-area">
-            <div class="line-numbers" id="lineNumbers">1</div>
-            <div class="editor-stack">
-              <pre class="code-highlight" id="highlightLayer" aria-hidden="true"></pre>
-              <textarea id="codeInput" class="code-input" spellcheck="false"
-                autocapitalize="off" autocomplete="off" autocorrect="off"
-                aria-label="HTML code editor"></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="previewView" style="display:none;flex:1;min-height:0">
-        <iframe class="preview-frame" id="previewFrame" title="Project live preview"
-          sandbox="allow-scripts allow-forms"></iframe>
-      </div>
-
-      <div class="statusbar">
-        <div class="status-left">
-          <span id="syntaxStatus"><span class="dot"></span> Ready</span>
-          <span id="lineCount">Lines: 0</span>
-          <span id="charCount">Characters: 0</span>
-        </div>
-        <div class="status-right">
-          <span>HTML</span><span>UTF-8</span><span>Spaces: 2</span>
-        </div>
-      </div>
-    </section>
-
-    <aside class="rightbar glass">
-      <div class="ai-heading">
-        <div class="ai-avatar">✦</div>
+    <main class="center panel">
+      <div class="center-head">
         <div>
-          <h2>AI Coding Assistant</h2>
-          <p>Describe it. Watch it become code.</p>
+          <strong id="editorTitle">Code Workspace</strong>
+          <div class="hint" style="margin-top:3px">AI-generated code · HTML, CSS & JavaScript</div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" id="codeTab">Code</button>
+          <button class="tab" id="previewTab">Preview</button>
         </div>
       </div>
 
-      <div class="ai-status"><span class="dot" id="aiDot"></span><span id="aiStatus">Ready to build</span></div>
-
-      <div>
-        <label class="prompt-label" for="aiPrompt">What should we build?</label>
-        <textarea class="prompt-box" id="aiPrompt"
-          placeholder="Make a beautiful notes app with the ability to create, edit and save notes..."></textarea>
-        <div class="ai-controls">
-          <button class="btn primary" id="generateBtn">✦ Generate code</button>
-          <button class="btn" id="stopBtn" disabled>Stop</button>
+      <div class="editor-shell" id="editorShell">
+        <div class="editor-empty" id="editorEmpty">
+          <div>
+            <strong>Your code appears here</strong>
+            Describe an app to the AI on the right.<br>
+            Your generated code will appear in this workspace.
+          </div>
         </div>
-        <p class="hint">AI writes directly into the editor. Your current code is replaced after generation succeeds.</p>
+        <pre id="codeView" aria-label="Generated code"></pre>
       </div>
 
-      <div class="divider"></div>
-
-      <div>
-        <div class="section-label">Quick ideas</div>
-        <div class="quick-prompts">
-          <button class="chip" data-prompt="Build a calculator app with a beautiful interface and working arithmetic buttons.">Calculator</button>
-          <button class="chip" data-prompt="Build a notes app where I can create, edit, delete, search and save notes in local storage.">Notes app</button>
-          <button class="chip" data-prompt="Build a simple number guessing game with score tracking and a restart button.">Mini game</button>
-          <button class="chip" data-prompt="Build a modern unit converter with length, weight and temperature conversions.">Converter</button>
-        </div>
+      <div class="preview-shell" id="previewShell">
+        <iframe id="previewFrame" title="Live app preview" sandbox="allow-scripts allow-forms allow-modals allow-popups allow-downloads"></iframe>
+      </div>
+      <div class="preview-empty" id="previewEmpty">
+        <div><strong>Live Preview</strong>Your generated app will appear here.</div>
       </div>
 
-      <div class="divider"></div>
-
-      <div>
-        <div class="section-label">Build activity</div>
-        <div class="activity">
-          <div class="activity-icon">⌘</div>
-          <div><strong id="activityTitle" style="color:#e7eaff">Workspace ready</strong><br><span id="activityDetail">Create a project or ask the AI.</span></div>
-        </div>
+      <div class="editor-status">
+        <span id="fileStatus">index.html</span>
+        <span id="lineStatus">0 lines</span>
+        <span id="saveStatus">Saved locally</span>
       </div>
+      <div class="bottom-tools">
+        <button class="small-btn" id="refreshBtn">⟳ Refresh Preview</button>
+        <button class="small-btn" id="copyBtn">▣ Copy Code</button>
+        <button class="small-btn" id="downloadBtn">↓ Download</button>
+        <button class="small-btn" id="clearBtn">⌫ Clear Code</button>
+      </div>
+    </main>
 
+    <aside class="rightbar panel">
+      <div class="section-label">AI Builder</div>
       <div class="feature-card">
-        <strong>⌁ Live code editor</strong>
-        <p>Syntax colours, line numbers, red error indicators and animated code insertion.</p>
+        <h3>✦ Build with AI</h3>
+        <p>Describe what you want to create. The AI writes the HTML, CSS, and JavaScript for you.</p>
+        <div class="prompt-chips">
+          <button class="chip" data-prompt="Create a beautiful notes app with create, edit, delete, search, and local saving.">Notes app</button>
+          <button class="chip" data-prompt="Create a modern calculator with working arithmetic buttons and a clear button.">Calculator</button>
+          <button class="chip" data-prompt="Create a colorful mini game with keyboard controls, score, and restart button.">Mini game</button>
+        </div>
+        <textarea id="prompt" placeholder="Describe your app...&#10;&#10;Example: Make a notes app where I can create, edit and save notes."></textarea>
+        <button class="primary full" id="generateBtn">✦ Generate Code</button>
+        <div class="progress" id="progress"><div id="progressBar"></div></div>
+        <div id="message" aria-live="polite"></div>
+        <div class="hint">Requires your deployed Vercel <code>/api/chat</code> endpoint.</div>
+      </div>
+
+      <div class="section-label">Start with a template</div>
+      <div class="feature-card">
+        <h3>🧩 Quick Templates</h3>
+        <p>Load a working starter app into your editor.</p>
+        <button class="full" data-template="blank">＋ Blank HTML</button>
+        <button class="full" data-template="calculator">▦ Calculator</button>
+        <button class="full" data-template="notes">▤ Notes App</button>
+        <button class="full" data-template="game">◈ Mini Game</button>
       </div>
       <div class="feature-card">
-        <strong>◉ Instant preview</strong>
-        <p>Run your project and test it inside a separate preview panel.</p>
-      </div>
-      <div class="feature-card">
-        <strong>▣ Project storage</strong>
-        <p>Your projects remain available in this browser after you reopen the app.</p>
+        <h3>⌘ How it works</h3>
+        <p>1. Describe your idea.</p>
+        <p>2. AI generates the code in the background.</p>
+        <p>3. Review the code and refresh the preview.</p>
       </div>
     </aside>
-  </main>
-</div>
-
-<div class="toast" id="toast"></div>
-<input type="file" id="projectImport" accept=".html,.htm,.json,text/html,application/json">
-
-<div class="overlay" id="modalOverlay">
-  <div class="modal">
-    <h2 id="modalTitle">New project</h2>
-    <p id="modalDescription">Give your next idea a name.</p>
-    <label for="projectName">Project name</label>
-    <input id="projectName" maxlength="60" placeholder="My awesome app">
-    <label for="projectType">Starting template</label>
-    <select id="projectType">
-      <option value="blank">Blank HTML project</option>
-      <option value="calculator">Calculator starter</option>
-      <option value="notes">Notes app starter</option>
-      <option value="game">Mini game starter</option>
-    </select>
-    <div class="modal-actions">
-      <button class="btn" id="cancelModal">Cancel</button>
-      <button class="btn primary" id="createProjectBtn">Create project</button>
-    </div>
   </div>
 </div>
 
-<div class="overlay" id="settingsOverlay">
+<div class="modal-backdrop" id="settingsModal">
   <div class="modal">
-    <h2>AI connection</h2>
-    <p>This app sends prompts to your own server endpoint. Keep your Replicate API token on the server, never in this HTML file.</p>
-    <label for="apiEndpoint">Backend endpoint</label>
-    <input id="apiEndpoint" value="/api/chat" placeholder="/api/chat">
-    <p id="connectionHelp">The backend should accept a prompt and return generated HTML code. The endpoint setting is saved locally.</p>
+    <h2>Studio Settings</h2>
+    <p>Configure your deployed AI endpoint. Keep your Replicate token in Vercel environment variables, never in this page.</p>
+    <label for="endpointInput">AI endpoint URL</label>
+    <input id="endpointInput" placeholder="/api/chat">
     <div class="modal-actions">
-      <button class="btn" id="closeSettings">Cancel</button>
-      <button class="btn primary" id="saveSettings">Save settings</button>
+      <button id="cancelSettings">Cancel</button>
+      <button class="primary" id="saveSettings">Save Settings</button>
     </div>
   </div>
 </div>
+<div id="toast"></div>
 
 <script>
-"use strict";
+(() => {
+  "use strict";
 
-const $ = id => document.getElementById(id);
-const STORAGE_KEY = "codeStudioProjects_v1";
-const SETTINGS_KEY = "codeStudioSettings_v1";
+  const $ = id => document.getElementById(id);
+  const STORAGE_KEY = "codeStudioProjectsV2";
+  const ACTIVE_KEY = "codeStudioActiveV2";
+  const ENDPOINT_KEY = "codeStudioEndpointV2";
 
-const starterCode = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My First App</title>
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #dbeafe, #ede9fe);
-    }
-    .card {
-      padding: 35px;
-      border-radius: 22px;
-      background: white;
-      box-shadow: 0 15px 50px #0001;
-      text-align: center;
-    }
-    button {
-      padding: 12px 18px;
-      border: 0;
-      border-radius: 10px;
-      background: #6366f1;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Hello, developer!</h1>
-    <p>Your next idea starts here.</p>
-    <button onclick="alert('It works!')">Test button</button>
-  </div>
-</body>
-</html>`;
-
-const templates = {
-  blank: starterCode,
-  calculator: `<!DOCTYPE html>
+  const templates = {
+    blank: `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My App</title>
 <style>
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#101525;font-family:Arial}
-.calc{width:280px;padding:20px;background:#20283b;border-radius:24px;color:white}
-#screen{width:100%;box-sizing:border-box;height:70px;background:#101525;color:white;border:0;border-radius:12px;text-align:right;padding:12px;font-size:28px;margin-bottom:12px}
-.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-button{padding:16px 5px;border:0;border-radius:10px;background:#35415a;color:white;cursor:pointer;font-size:17px}
-button:hover{background:#586b94}
+body{font-family:Arial,sans-serif;margin:0;padding:40px;background:#f4f5f8;color:#222}
+main{max-width:700px;margin:auto;background:white;padding:28px;border-radius:18px;box-shadow:0 10px 40px #0001}
 </style>
 </head>
-<body><div class="calc"><input id="screen" value="0" readonly><div class="keys">
-<button onclick="clearScreen()">AC</button><button onclick="add('/')">÷</button><button onclick="add('*')">×</button><button onclick="back()">⌫</button>
-<button onclick="add('7')">7</button><button onclick="add('8')">8</button><button onclick="add('9')">9</button><button onclick="add('-')">−</button>
-<button onclick="add('4')">4</button><button onclick="add('5')">5</button><button onclick="add('6')">6</button><button onclick="add('+')">+</button>
-<button onclick="add('1')">1</button><button onclick="add('2')">2</button><button onclick="add('3')">3</button><button onclick="calculate()">=</button>
-<button onclick="add('0')" style="grid-column:span 2">0</button><button onclick="add('.')">.</button><button onclick="add('(')">(</button>
-</div></div>
-<script>
-function add(v){let s=document.getElementById('screen');s.value=s.value==='0'?v:s.value+v}
-function clearScreen(){document.getElementById('screen').value='0'}
-function back(){let s=document.getElementById('screen');s.value=s.value.length>1?s.value.slice(0,-1):'0'}
-function calculate(){let s=document.getElementById('screen');try{if(!/^[0-9+*/(). -]+$/.test(s.value))throw Error();let n=Function('"use strict";return ('+s.value+')')();s.value=Number.isFinite(n)?String(n):'Error'}catch(e){s.value='Error'}}
-<\/script></body></html>`,
-  notes: `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Notes</title>
+<body><main><h1>My New App</h1><p>Start by describing what you want to build to the AI.</p></main></body>
+</html>`,
+    calculator: `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Calculator</title>
 <style>
-body{margin:0;padding:35px;font-family:Arial;background:#f3f4fb;color:#20243a}
-main{max-width:750px;margin:auto}h1{font-size:34px}
-input,textarea{width:100%;box-sizing:border-box;padding:13px;border:1px solid #ddd;border-radius:12px;margin:6px 0;font:inherit}
-textarea{min-height:100px}button{padding:10px 15px;border:0;border-radius:9px;background:#6366f1;color:white;cursor:pointer}
-.note{background:white;border-radius:14px;padding:17px;margin-top:12px;box-shadow:0 5px 20px #00008}
-.note h3{margin-top:0}.note p{white-space:pre-wrap}
-.actions{display:flex;gap:8px}
-</style></head>
-<body><main><h1>My Notes ✎</h1><input id="title" placeholder="Note title"><textarea id="body" placeholder="Write your note..."></textarea><button onclick="saveNote()">Save note</button><h2>Saved notes</h2><div id="notes"></div></main>
-<script>
-let notes=JSON.parse(localStorage.getItem('starterNotes')||'[]');
-function render(){document.getElementById('notes').innerHTML=notes.map((n,i)=>'<article class="note"><h3>'+escapeText(n.title)+'</h3><p>'+escapeText(n.body)+'</p><div class="actions"><button onclick="editNote('+i+')">Edit</button><button onclick="deleteNote('+i+')">Delete</button></div></article>').join('')}
-function escapeText(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function saveNote(){let title=document.getElementById('title'),body=document.getElementById('body');if(!title.value.trim()&&!body.value.trim())return;notes.unshift({title:title.value,body:body.value});localStorage.setItem('starterNotes',JSON.stringify(notes));title.value='';body.value='';render()}
-function editNote(i){let n=notes[i];document.getElementById('title').value=n.title;document.getElementById('body').value=n.body;notes.splice(i,1);localStorage.setItem('starterNotes',JSON.stringify(notes));render()}
-function deleteNote(i){notes.splice(i,1);localStorage.setItem('starterNotes',JSON.stringify(notes));render()}
-render();
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#d8d4f8,#f8d9c8);font-family:Arial}
+.calc{width:min(330px,92vw);padding:20px;border-radius:25px;background:#24232b;color:white;box-shadow:0 25px 60px #0003}
+#display{width:100%;height:75px;border:0;background:#17171c;color:white;text-align:right;font-size:30px;padding:15px;border-radius:13px;margin-bottom:12px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}button{border:0;border-radius:12px;padding:17px 5px;font-size:18px;cursor:pointer;background:#393841;color:white}button:hover{filter:brightness(1.25)}.op{background:#7964c9}.eq{background:#ad8c75}.wide{grid-column:span 2}
+</style></head><body><div class="calc"><input id="display" value="0" readonly><div class="keys">
+<button onclick="clr()">AC</button><button onclick="del()">⌫</button><button onclick="add('%')" class="op">%</button><button onclick="add('/')" class="op">÷</button>
+<button onclick="add('7')">7</button><button onclick="add('8')">8</button><button onclick="add('9')">9</button><button onclick="add('*')" class="op">×</button>
+<button onclick="add('4')">4</button><button onclick="add('5')">5</button><button onclick="add('6')">6</button><button onclick="add('-')" class="op">−</button>
+<button onclick="add('1')">1</button><button onclick="add('2')">2</button><button onclick="add('3')">3</button><button onclick="add('+')" class="op">+</button>
+<button onclick="add('0')" class="wide">0</button><button onclick="add('.')">.</button><button onclick="calc()" class="eq">=</button>
+</div></div><script>
+const d=document.getElementById('display');function add(v){if(d.value==='0'&&/[0-9]/.test(v))d.value=v;else d.value+=v}function clr(){d.value='0'}function del(){d.value=d.value.length>1?d.value.slice(0,-1):'0'}function calc(){try{if(!/^[0-9+*/%.() -]+$/.test(d.value))throw 0;const r=Function('"use strict";return ('+d.value+')')();d.value=Number.isFinite(r)?String(r):'Error'}catch(e){d.value='Error'}}
 <\/script></body></html>`,
-  game: `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guess the Number</title>
-<style>body{font-family:Arial;background:linear-gradient(135deg,#dbeafe,#ede9fe);min-height:100vh;display:grid;place-items:center;margin:0}.card{background:white;padding:32px;border-radius:22px;text-align:center;max-width:350px;box-shadow:0 20px 60px #0001}input,button{padding:12px;border-radius:10px;border:1px solid #ddd}button{background:#6366f1;color:white;cursor:pointer;border:0}#message{min-height:24px}</style></head>
-<body><div class="card"><h1>🔢 Guess the Number</h1><p>I'm thinking of a number from 1 to 20.</p><input id="guess" type="number" min="1" max="20" placeholder="Your guess"><button onclick="check()">Guess</button><p id="message">Good luck!</p><p>Attempts: <b id="attempts">0</b></p><button onclick="reset()">New game</button></div>
+    notes: `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notes</title>
+<style>
+*{box-sizing:border-box}body{font-family:Arial;margin:0;padding:28px;background:#f1edf8;color:#25222d}.app{max-width:850px;margin:auto}h1{margin-bottom:8px}.bar{display:flex;gap:8px;margin:20px 0}.bar input{flex:1}.bar input,textarea{padding:12px;border:1px solid #ddd;border-radius:10px}button{padding:11px 14px;border:0;border-radius:10px;background:#6d59a7;color:white;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.note{background:white;border-radius:15px;padding:16px;box-shadow:0 6px 20px #0001;overflow-wrap:anywhere}.note h3{margin-top:0}.note p{white-space:pre-wrap}.note button{margin-right:5px;padding:7px}
+</style></head><body><main class="app"><h1>My Notes</h1><p>Create and save notes in this browser.</p><div class="bar"><input id="title" placeholder="Note title"><button onclick="save()">＋ Add note</button></div><textarea id="body" placeholder="Write your note..." style="width:100%;min-height:100px"></textarea><div id="grid" class="grid"></div></main>
 <script>
-let target=Math.floor(Math.random()*20)+1,count=0;
-function check(){let n=Number(document.getElementById('guess').value),m=document.getElementById('message');if(n<1||n>20||!Number.isInteger(n)){m.textContent='Enter a whole number from 1 to 20.';return}count++;document.getElementById('attempts').textContent=count;m.textContent=n===target?'Correct! You did it!':n<target?'Try a higher number.':'Try a lower number.'}
-function reset(){target=Math.floor(Math.random()*20)+1;count=0;document.getElementById('attempts').textContent=0;document.getElementById('guess').value='';document.getElementById('message').textContent='New number chosen. Good luck!'}
+let notes=JSON.parse(localStorage.getItem('myNotesDemo')||'[]');function render(){grid.innerHTML='';notes.forEach((n,i)=>{const c=document.createElement('article');c.className='note';const h=document.createElement('h3');h.textContent=n.title;const p=document.createElement('p');p.textContent=n.body;const e=document.createElement('button');e.textContent='Edit';e.onclick=()=>{title.value=n.title;body.value=n.body;notes.splice(i,1);persist()};const d=document.createElement('button');d.textContent='Delete';d.onclick=()=>{notes.splice(i,1);persist()};c.append(h,p,e,d);grid.append(c)})}function persist(){localStorage.setItem('myNotesDemo',JSON.stringify(notes));render()}function save(){if(!title.value.trim()&&!body.value.trim())return;notes.unshift({title:title.value.trim()||'Untitled',body:body.value});title.value='';body.value='';persist()}render();
+<\/script></body></html>`,
+    game: `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Click Challenge</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#191b3b,#684b85);font-family:Arial;color:white;text-align:center}.box{padding:35px;background:#ffffff12;border:1px solid #ffffff25;border-radius:24px;max-width:500px;width:90%}button{border:0;border-radius:13px;padding:14px 22px;background:#c7b2ff;color:#211637;font-weight:bold;cursor:pointer}#target{width:100px;height:100px;border-radius:50%;margin:24px auto;background:#f5b7a6;display:grid;place-items:center;color:#251b27;font-size:30px;cursor:pointer;user-select:none}</style></head><body><main class="box"><h1>Click Challenge</h1><p>Click the target as many times as you can in 15 seconds.</p><h2>Score: <span id="score">0</span></h2><p id="time">Time: 15</p><div id="target" onclick="hit()">✦</div><button onclick="start()">Start / Restart</button><p id="msg">Press start to play.</p></main><script>
+let s=0,t=15,timer=null,playing=false;function hit(){if(playing){s++;score.textContent=s}}function start(){clearInterval(timer);s=0;t=15;playing=true;score.textContent=s;time.textContent='Time: '+t;msg.textContent='Go!';timer=setInterval(()=>{t--;time.textContent='Time: '+t;if(t<=0){clearInterval(timer);playing=false;msg.textContent='Finished! Your score: '+s}},1000)}
 <\/script></body></html>`
-};
-
-let projects = [];
-let currentId = null;
-let generationController = null;
-let generationBusy = false;
-let toastTimer = null;
-let currentTab = "code";
-let lastGenerated = "";
-
-function uid(){
-  return Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-}
-
-function escapeHTML(value){
-  return String(value).replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
-
-function loadProjects(){
-  try{
-    const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
-    if(Array.isArray(stored)&&stored.length){
-      projects=stored.filter(p=>p&&p.id&&typeof p.code==="string");
-    }
-  }catch(e){console.warn("Could not load projects",e)}
-  if(!projects.length){
-    projects=[{
-      id:uid(),name:"Welcome Project",code:starterCode,
-      updated:Date.now(),icon:"🌐"
-    }];
-  }
-  currentId=projects[0].id;
-}
-
-function persist(showMessage=false){
-  try{
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(projects));
-    if(showMessage)showToast("Project saved successfully.");
-    return true;
-  }catch(e){
-    showToast("Storage is full. Export your projects to keep a backup.");
-    return false;
-  }
-}
-
-function currentProject(){
-  return projects.find(p=>p.id===currentId)||projects[0];
-}
-
-function showToast(message){
-  $("toast").textContent=message;
-  $("toast").classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2800);
-}
-
-function setActivity(title,detail){
-  $("activityTitle").textContent=title;
-  $("activityDetail").textContent=detail;
-}
-
-function setAIStatus(message,busy=false){
-  $("aiStatus").textContent=message;
-  $("aiDot").style.background=busy?"#ffcf8a":"#6ee7b7";
-  $("editorState").textContent=busy?"AI is writing…":"Ready";
-  $("generateBtn").disabled=busy;
-  $("stopBtn").disabled=!busy;
-  generationBusy=busy;
-}
-
-function renderProjects(){
-  $("projectList").innerHTML="";
-  projects.forEach(project=>{
-    const item=document.createElement("div");
-    item.className="project-item"+(project.id===currentId?" active":"");
-    item.innerHTML=`
-      <span class="project-icon">${escapeHTML(project.icon||"🌐")}</span>
-      <span class="project-name" title="${escapeHTML(project.name)}">${escapeHTML(project.name)}</span>
-      <button class="project-delete" title="Delete project" aria-label="Delete ${escapeHTML(project.name)}">×</button>`;
-    item.addEventListener("click",e=>{
-      if(e.target.closest(".project-delete"))return;
-      switchProject(project.id);
-    });
-    item.querySelector(".project-delete").addEventListener("click",e=>{
-      e.stopPropagation();deleteProject(project.id);
-    });
-    $("projectList").appendChild(item);
-  });
-}
-
-function switchProject(id){
-  if(generationBusy){showToast("Stop the current generation before switching projects.");return}
-  const project=projects.find(p=>p.id===id);
-  if(!project)return;
-  currentId=id;
-  $("codeInput").value=project.code;
-  $("currentProjectTitle").textContent=project.name;
-  $("currentProjectSubtitle").textContent="index.html · HTML project";
-  renderProjects();updateEditor();persist();
-  if(currentTab==="preview")runPreview();
-}
-
-function deleteProject(id){
-  if(projects.length===1){showToast("Keep at least one project in your workspace.");return}
-  const project=projects.find(p=>p.id===id);
-  if(!project||!confirm('Delete "'+project.name+'"? This cannot be undone.'))return;
-  projects=projects.filter(p=>p.id!==id);
-  if(currentId===id)currentId=projects[0].id;
-  persist();switchProject(currentId);
-  showToast("Project deleted.");
-}
-
-function templateIcon(type){
-  return {blank:"🌐",calculator:"🧮",notes:"📝",game:"🎮"}[type]||"🌐";
-}
-
-function openNewProject(){
-  $("projectName").value="";
-  $("projectType").value="blank";
-  $("modalOverlay").classList.add("show");
-  setTimeout(()=>$("projectName").focus(),50);
-}
-
-function createProject(){
-  const name=$("projectName").value.trim()||"Untitled Project";
-  const type=$("projectType").value;
-  const project={
-    id:uid(),name,code:templates[type]||starterCode,
-    updated:Date.now(),icon:templateIcon(type)
   };
-  projects.unshift(project);
-  currentId=project.id;
-  persist();
-  $("modalOverlay").classList.remove("show");
-  switchProject(project.id);
-  setActivity("Project created",name+" is ready to edit.");
-  showToast("Your new project is ready.");
-}
 
-function updateEditor(){
-  const code=$("codeInput").value;
-  const lineTotal=code.split("\n").length;
-  $("lineNumbers").textContent=Array.from({length:lineTotal},(_,i)=>i+1).join("\n");
-  $("lineCount").textContent="Lines: "+lineTotal;
-  $("charCount").textContent="Characters: "+code.length;
-  $("highlightLayer").innerHTML=highlightCode(code);
-  $("highlightLayer").style.height="auto";
-  $("codeInput").style.height=Math.max(
-    $("editorScroll").clientHeight-38,
-    (lineTotal*23+65)
-  )+"px";
-  $("lineNumbers").style.minHeight=$("codeInput").style.height;
-  checkSyntax(code);
-}
+  let projects = [];
+  let activeId = null;
+  let generatedCode = "";
+  let busy = false;
+  let generationTimer = null;
 
-function highlightCode(code){
-  // Highlighting runs only on escaped text, never as executable HTML.
-  let s=escapeHTML(code);
-  const pieces=[];
-  const protect=html=>{
-    const marker="§§TOKEN"+pieces.length+"§§";
-    pieces.push(html);
-    return marker;
-  };
-  s=s.replace(/(&lt;!--[\s\S]*?--&gt;)/g,m=>protect('<span class="token-comment">'+m+'</span>'));
-  s=s.replace(/(&quot;[^&]*?&quot;|&#39;.*?&#39;|"[^"]*"|'[^']*')/g,m=>protect('<span class="token-string">'+m+'</span>'));
-  s=s.replace(/\b(const|let|var|function|return|if|else|for|while|new|class|this|true|false|null|undefined|async|await|try|catch|throw|typeof|import|export|from)\b/g,'<span class="token-keyword">$1</span>');
-  s=s.replace(/(&lt;\/?)([a-zA-Z][\w-]*)/g,'<span class="token-tag">$1$2</span>');
-  s=s.replace(/\b(\d+(?:\.\d+)?)\b/g,'<span class="token-number">$1</span>');
-  s=s.replace(/§§TOKEN(\d+)§§/g,(_,i)=>pieces[Number(i)]);
-  return s+"\n";
-}
-
-function checkSyntax(code){
-  const problems=[];
-  const stack=[];
-  const lines=code.split("\n");
-  let quote=null,escaped=false,comment=false;
-  let line=1;
-  for(let i=0;i<code.length;i++){
-    const c=code[i],next=code[i+1];
-    if(c==="\n"){line++;comment=false;continue}
-    if(comment)continue;
-    if(quote){
-      if(escaped){escaped=false;continue}
-      if(c==="\\"){escaped=true;continue}
-      if(c===quote)quote=null;
-      continue;
-    }
-    if(c==="/"&&next==="/"){comment=true;i++;continue}
-    if(c==='"'||c==="'"||c==="`"){quote=c;continue}
-    if(c==="("||c==="{"||c==="[")stack.push({c,line});
-    else if(c===")"||c==="}"||c==="]"){
-      const expected={")":"(","]":"[","}":"{"}[c];
-      if(!stack.length||stack[stack.length-1].c!==expected){
-        problems.push({line,message:"Unexpected closing "+c});
-      }else stack.pop();
+  function id() {
+    return "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+  function toast(message) {
+    $("toast").textContent = message;
+    $("toast").classList.add("show");
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => $("toast").classList.remove("show"), 2600);
+  }
+  function activeProject() {
+    return projects.find(p => p.id === activeId);
+  }
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+      localStorage.setItem(ACTIVE_KEY, activeId || "");
+      $("saveStatus").textContent = "Saved locally";
+    } catch (e) {
+      $("saveStatus").textContent = "Storage unavailable";
     }
   }
-  if(stack.length){
-    problems.push({line:stack[stack.length-1].line,message:"Unclosed "+stack[stack.length-1].c});
-  }
-  if(quote)problems.push({line,message:"Unclosed string"});
-  // This is a lightweight checker, not a full HTML/JavaScript compiler.
-  const scripts=[...code.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
-  for(const match of scripts){
-    try{new Function(match[1])}
-    catch(e){
-      const pos=Number((String(e.message).match(/line\s+(\d+)/i)||[])[1]);
-      problems.push({line:pos?code.slice(0,match.index).split("\n").length+pos:1,
-        message:"JavaScript syntax: "+e.message});
-    }
-  }
-  const unique=problems.filter((p,i,a)=>a.findIndex(x=>x.line===p.line&&x.message===p.message)===i);
-  if(unique.length){
-    $("syntaxStatus").innerHTML='<span style="color:var(--red)">● '+unique.length+' possible syntax issue(s)</span>';
-    $("editorState").textContent="Check code";
-    $("activityDetail").textContent=unique[0].message+" (line "+unique[0].line+")";
-  }else{
-    $("syntaxStatus").innerHTML='<span class="dot"></span> No basic syntax issues';
-    if(!generationBusy)$("editorState").textContent="Ready";
-  }
-}
-
-function saveEditor(){
-  const p=currentProject();
-  if(!p)return;
-  p.code=$("codeInput").value;
-  p.updated=Date.now();
-  persist(true);
-}
-
-function openTab(tab){
-  currentTab=tab;
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
-  $("codeView").style.display=tab==="code"?"block":"none";
-  $("previewView").style.display=tab==="preview"?"block":"none";
-  if(tab==="preview")runPreview();
-  else updateEditor();
-}
-
-function runPreview(){
-  const p=currentProject();
-  if(!p)return;
-  const code=$("codeInput").value;
-  p.code=code;p.updated=Date.now();persist();
-  $("previewFrame").srcdoc=code;
-  openTabFromRun();
-  setActivity("Preview updated","Running "+p.name+" in the preview panel.");
-}
-
-function openTabFromRun(){
-  currentTab="preview";
-  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab==="preview"));
-  $("codeView").style.display="none";
-  $("previewView").style.display="block";
-}
-
-function downloadFile(name,content,type){
-  const blob=new Blob([content],{type});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download=name;
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-function exportProject(){
-  const p=currentProject();
-  if(!p)return;
-  p.code=$("codeInput").value;
-  downloadFile(p.name.replace(/[^\w-]+/g,"-")+".html",p.code,"text/html");
-  showToast("HTML file exported.");
-}
-
-function exportWorkspace(){
-  downloadFile("code-studio-projects.json",JSON.stringify(projects,null,2),"application/json");
-  showToast("Workspace backup exported.");
-}
-
-function importFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      const text=String(reader.result||"");
-      if(file.name.toLowerCase().endsWith(".json")){
-        const data=JSON.parse(text);
-        const incoming=Array.isArray(data)?data:(data.projects||[]);
-        if(!Array.isArray(incoming)||!incoming.length)throw Error("No projects found in backup.");
-        incoming.forEach(p=>{
-          if(typeof p.code==="string"){
-            projects.unshift({id:uid(),name:String(p.name||"Imported Project"),code:p.code,icon:p.icon||"📦",updated:Date.now()});
-          }
-        });
-        persist();switchProject(projects[0].id);
-        showToast("Workspace imported.");
-      }else{
-        const name=file.name.replace(/\.(html?|HTML?)$/,"")||"Imported Project";
-        const p={id:uid(),name,code:text,icon:"📄",updated:Date.now()};
-        projects.unshift(p);currentId=p.id;persist();switchProject(p.id);
-        showToast("HTML project imported.");
-      }
-    }catch(e){showToast("Import failed: "+e.message)}
-  };
-  reader.readAsText(file);
-}
-
-function formatCode(){
-  // Conservative indentation formatter for HTML-like code.
-  const code=$("codeInput").value;
-  const lines=code.split("\n");
-  let depth=0;
-  const result=lines.map(raw=>{
-    const t=raw.trim();
-    if(!t)return "";
-    if(/^<\/(div|section|main|article|header|footer|nav|body|html|head|ul|ol|li|form|style|script|table|tr|td|h[1-6]|p|button|label|textarea|select)\b/i.test(t))depth=Math.max(0,depth-1);
-    const out="  ".repeat(depth)+t;
-    if(/^<(div|section|main|article|header|footer|nav|body|html|head|ul|ol|li|form|style|script|table|tr|td|h[1-6]|p|button|label|textarea|select)\b/i.test(t)&&
-       !/\/>$/.test(t)&&!/^<\//.test(t)&&!new RegExp("</"+t.slice(1).split(/[\s>]/)[0]+">","i").test(t)){
-      depth++;
-    }
-    return out;
-  }).join("\n");
-  $("codeInput").value=result;
-  updateEditor();saveQuietly();
-  showToast("Basic indentation applied.");
-}
-
-function saveQuietly(){
-  const p=currentProject();if(!p)return;
-  p.code=$("codeInput").value;p.updated=Date.now();persist();
-}
-
-function buildPrompt(userPrompt,existingCode){
-  return `You are a helpful expert web developer. Build the user's requested small web project.
-
-USER REQUEST:
-${userPrompt}
-
-REQUIREMENTS:
-- Return a complete, working HTML document only.
-- Include all necessary HTML, CSS, and JavaScript in ONE file.
-- Put CSS inside <style> and JavaScript inside <script>.
-- Make buttons and features actually work.
-- Use responsive design and polished styling.
-- Do not return Markdown fences, explanations, or a separate chat answer.
-- Never omit essential code with placeholders such as "...".
-- Escape any closing script sequence inside JavaScript strings when necessary.
-- Do not use external APIs or libraries unless the user specifically asks.
-- Keep the result suitable for a general school-age audience.
-
-CURRENT PROJECT CODE (for context; replace it if the request requires a new app):
-${existingCode.slice(0,18000)}`;
-}
-
-function extractCode(data){
-  if(typeof data==="string")return data;
-  if(!data||typeof data!=="object")return "";
-  const candidates=[
-    data.code,data.html,data.output,data.response,data.content,
-    data.result,data.text,data.message,
-    data.choices?.[0]?.message?.content,
-    data.choices?.[0]?.text,
-    data.prediction?.output,
-    data.data?.output,data.data?.content
-  ];
-  for(const candidate of candidates){
-    if(typeof candidate==="string"&&candidate.trim())return candidate;
-    if(Array.isArray(candidate)){
-      const joined=candidate.map(x=>typeof x==="string"?x:x?.text||"").join("");
-      if(joined.trim())return joined;
-    }
-  }
-  return "";
-}
-
-function cleanGeneratedCode(code){
-  let result=String(code||"").trim();
-  result=result.replace(/^```(?:html)?\s*/i,"").replace(/\s*```$/,"").trim();
-  const start=result.toLowerCase().indexOf("<!doctype html");
-  const htmlStart=result.toLowerCase().indexOf("<html");
-  const first=start>=0?start:htmlStart;
-  if(first>0)result=result.slice(first);
-  return result;
-}
-
-async function requestAI(prompt,signal){
-  const endpoint=localStorage.getItem(SETTINGS_KEY)||"/api/chat";
-  const existing=$("codeInput").value;
-  const fullPrompt=buildPrompt(prompt,existing);
-  const response=await fetch(endpoint,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    signal,
-    body:JSON.stringify({
-      prompt:fullPrompt,
-      message:fullPrompt,
-      messages:[
-        {role:"system",content:"You generate complete, working single-file HTML apps. Return HTML code only."},
-        {role:"user",content:fullPrompt}
-      ]
-    })
-  });
-  const raw=await response.text();
-  let data;
-  try{data=JSON.parse(raw)}catch(e){
-    throw Error("Backend returned non-JSON data. Check your Vercel /api/chat endpoint.");
-  }
-  if(!response.ok){
-    throw Error(data.error||data.message||("Server error "+response.status));
-  }
-  if(data.error)throw Error(data.error);
-  const code=extractCode(data);
-  if(!code)throw Error("The backend returned no code. Check its response format.");
-  return cleanGeneratedCode(code);
-}
-
-function animateCode(code,signal){
-  return new Promise((resolve,reject)=>{
-    const editor=$("codeInput");
-    editor.value="";
-    let index=0;
-    const chunk=30;
-    let stopped=false;
-    const abort=()=>{stopped=true;reject(new DOMException("Stopped","AbortError"))};
-    if(signal.aborted){abort();return}
-    signal.addEventListener("abort",abort,{once:true});
-    function step(){
-      if(stopped)return;
-      if(signal.aborted){abort();return}
-      index=Math.min(code.length,index+chunk);
-      editor.value=code.slice(0,index);
-      updateEditor();
-      const scroll=$("editorScroll");
-      scroll.scrollTop=scroll.scrollHeight;
-      if(index<code.length){
-        requestAnimationFrame(()=>setTimeout(step,8));
-      }else{
-        signal.removeEventListener("abort",abort);
-        resolve();
-      }
-    }
-    step();
-  });
-}
-
-async function generateCode(){
-  const prompt=$("aiPrompt").value.trim();
-  if(!prompt){showToast("Describe the app you want to build first.");$("aiPrompt").focus();return}
-  if(generationBusy)return;
-  const project=currentProject();
-  if(!project)return;
-  generationController=new AbortController();
-  const signal=generationController.signal;
-  const previousCode=$("codeInput").value;
-  setAIStatus("Thinking…",true);
-  setActivity("AI is planning", "Sending your request to the coding backend.");
-  $("generateBtn").textContent="✦ Working…";
-  try{
-    const code=await requestAI(prompt,signal);
-    if(!code.toLowerCase().includes("<html")&&!code.toLowerCase().includes("<!doctype")){
-      throw Error("The AI response does not appear to contain a complete HTML document.");
-    }
-    lastGenerated=code;
-    setAIStatus("Writing code…",true);
-    setActivity("Writing code","Inserting generated HTML into the editor.");
-    await animateCode(code,signal);
-    project.code=code;
-    project.updated=Date.now();
-    project.name=project.name||"AI Project";
+  function saveCurrentCode(code) {
+    const p = activeProject();
+    if (!p) return;
+    p.code = code;
+    p.updatedAt = Date.now();
+    generatedCode = code;
     persist();
-    renderProjects();
-    updateEditor();
-    setAIStatus("Code generated",false);
-    setActivity("Generation complete",code.split("\n").length+" lines inserted into the editor.");
-    showToast("Code generated successfully. Press Run to test your app.");
-  }catch(error){
-    if(error.name==="AbortError"){
-      // Preserve the last fully generated project if the animation is interrupted.
-      $("codeInput").value=previousCode;
-      updateEditor();
-      setAIStatus("Generation stopped",false);
-      setActivity("Generation stopped","Your previous code has been restored.");
-      showToast("Generation stopped.");
-    }else{
-      $("codeInput").value=previousCode;
-      updateEditor();
-      setAIStatus("Connection needs attention",false);
-      setActivity("Could not generate code",error.message);
-      showToast(error.message);
+    renderProjectList();
+    updateCodeView();
+  }
+  function newProject(name = "Untitled Project", code = "") {
+    const p = {id:id(),name,code,updatedAt:Date.now()};
+    projects.unshift(p);
+    activeId = p.id;
+    generatedCode = code;
+    persist();
+    renderProjectList();
+    showProject();
+    return p;
+  }
+  function renderProjectList() {
+    const list = $("projectList");
+    list.innerHTML = "";
+    if (!projects.length) {
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.textContent = "No projects yet. Create one to begin.";
+      list.append(empty);
+      return;
     }
-  }finally{
-    generationController=null;
-    setAIStatus($("aiStatus").textContent,false);
-    $("generateBtn").textContent="✦ Generate code";
+    projects.forEach(p => {
+      const item = document.createElement("div");
+      item.className = "project-item" + (p.id === activeId ? " active" : "");
+      const icon = document.createElement("span");
+      icon.className = "project-icon";
+      icon.textContent = "⌘";
+      const name = document.createElement("span");
+      name.textContent = p.name;
+      item.append(icon,name);
+      item.title = p.name;
+      item.addEventListener("click", () => {
+        activeId = p.id;
+        generatedCode = p.code || "";
+        persist();
+        renderProjectList();
+        showProject();
+      });
+      list.append(item);
+    });
   }
-}
+  function showProject() {
+    const p = activeProject();
+    $("topProjectName").textContent = "/ " + (p ? p.name : "Untitled Project");
+    $("editorTitle").textContent = p ? p.name : "Code Workspace";
+    generatedCode = p ? (p.code || "") : "";
+    updateCodeView();
+    setTab("code");
+    updatePreviewEmpty();
+  }
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function highlightCode(code) {
+    let escaped = escapeHtml(code);
+    escaped = escaped.replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span class="comment">$1</span>');
+    escaped = escaped.replace(/(&lt;\/?[\w-]+)(.*?&gt;)/g,'<span class="tag">$1</span>$2');
+    escaped = escaped.replace(/\b(const|let|var|function|return|if|else|for|while|class|new|async|await|try|catch|throw|true|false|null|undefined)\b/g,'<span class="kw">$1</span>');
+    escaped = escaped.replace(/(["'`])(?:\\.|(?!\1)[^\\])*?\1/g,'<span class="str">$&</span>');
+    return escaped;
+  }
+  function updateCodeView() {
+    const hasCode = !!generatedCode.trim();
+    $("editorEmpty").style.display = hasCode ? "none" : "flex";
+    $("codeView").style.display = hasCode ? "block" : "none";
+    $("codeView").innerHTML = hasCode ? highlightCode(generatedCode) : "";
+    $("lineStatus").textContent = (hasCode ? generatedCode.split("\n").length : 0) + " lines";
+    $("fileStatus").textContent = "index.html";
+  }
+  function updatePreviewEmpty() {
+    const hasCode = !!generatedCode.trim();
+    $("previewEmpty").style.display = hasCode && $("previewTab").classList.contains("active") ? "none" : "flex";
+    $("previewShell").style.display = hasCode && $("previewTab").classList.contains("active") ? "flex" : "none";
+  }
+  function setTab(tab) {
+    const isPreview = tab === "preview";
+    $("codeTab").classList.toggle("active", !isPreview);
+    $("previewTab").classList.toggle("active", isPreview);
+    $("editorShell").style.display = isPreview ? "none" : "block";
+    $("previewShell").style.display = isPreview && generatedCode.trim() ? "flex" : "none";
+    $("previewEmpty").style.display = isPreview && !generatedCode.trim() ? "flex" : "none";
+    if (isPreview && generatedCode.trim()) refreshPreview(false);
+  }
+  function refreshPreview(showNotice = true) {
+    const code = generatedCode || "";
+    if (!code.trim()) {
+      $("previewFrame").srcdoc = "";
+      updatePreviewEmpty();
+      if (showNotice) toast("Generate or load code before refreshing.");
+      return;
+    }
+    // Refresh the iframe using the latest saved/generated HTML.
+    $("previewFrame").srcdoc = "";
+    requestAnimationFrame(() => {
+      $("previewFrame").srcdoc = code;
+    });
+    if (showNotice) toast("Preview refreshed");
+    if ($("previewTab").classList.contains("active")) {
+      $("previewEmpty").style.display = "none";
+      $("previewShell").style.display = "flex";
+    }
+  }
+  function setMessage(text, kind = "") {
+    $("message").textContent = text;
+    $("message").className = kind;
+  }
+  function setBusy(value) {
+    busy = value;
+    $("generateBtn").disabled = value;
+    $("generateBtn").textContent = value ? "◌ Generating..." : "✦ Generate Code";
+    $("statusText").textContent = value ? "Building…" : "Ready";
+    $("progress").style.display = value ? "block" : "none";
+    if (generationTimer) clearInterval(generationTimer);
+    if (value) {
+      let n = 4;
+      $("progressBar").style.width = n + "%";
+      generationTimer = setInterval(() => {
+        n = Math.min(92, n + Math.random() * 8);
+        $("progressBar").style.width = n + "%";
+      }, 350);
+    } else {
+      $("progressBar").style.width = "100%";
+    }
+  }
+  function extractCode(data) {
+    let value = data && (data.code || data.html || data.output || data.response || data.text);
+    if (Array.isArray(value)) value = value.join("");
+    if (typeof value !== "string" && data && Array.isArray(data.messages)) {
+      value = data.messages.filter(m => m && m.role === "assistant")
+        .map(m => m.content || "").join("\n");
+    }
+    if (typeof value !== "string") return "";
+    return value.replace(/^```(?:html)?\s*/i,"").replace(/\s*```$/,"").trim();
+  }
+  async function generateCode() {
+    if (busy) return;
+    const prompt = $("prompt").value.trim();
+    if (!prompt) {
+      setMessage("Describe the app you want to build first.", "error");
+      $("prompt").focus();
+      return;
+    }
+    if (!activeProject()) newProject("AI Project");
+    const endpoint = localStorage.getItem(ENDPOINT_KEY) || "/api/chat";
+    setBusy(true);
+    setMessage("AI is writing your app. Please wait…");
+    try {
+      const response = await fetch(endpoint, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          prompt:
+            "Create a complete, working, single-file HTML application. " +
+            "Include all CSS and JavaScript inside the HTML. Return HTML code only, " +
+            "with no Markdown fences or explanations. The code must be usable in a browser. " +
+            "User request: " + prompt,
+          message:prompt,
+          messages:[
+            {role:"system",content:"You are an expert web app developer. Return a complete single-file HTML document only. No Markdown fences. Implement the requested functionality and responsive styling."},
+            {role:"user",content:prompt}
+          ]
+        })
+      });
+      let data;
+      const raw = await response.text();
+      try { data = JSON.parse(raw); }
+      catch { throw new Error("The AI endpoint returned invalid data. Check that api/chat.js is deployed correctly."); }
+      if (!response.ok) throw new Error(data.error || data.message || "The AI request failed (" + response.status + ").");
+      const code = extractCode(data);
+      if (!code || (!code.includes("<") && code.length < 30)) {
+        throw new Error("The AI returned no usable HTML code. Try a more detailed prompt.");
+      }
+      // Animate code into the editor so it feels like the AI is writing it.
+      const p = activeProject();
+      if (p) p.name = prompt.length > 28 ? prompt.slice(0,25) + "…" : prompt;
+      renderProjectList();
+      $("topProjectName").textContent = "/ " + (p ? p.name : "AI Project");
+      $("editorTitle").textContent = p ? p.name : "AI Project";
+      generatedCode = "";
+      updateCodeView();
+      const charsPerTick = Math.max(80, Math.ceil(code.length / 45));
+      let index = 0;
+      await new Promise(resolve => {
+        const tick = () => {
+          index = Math.min(code.length, index + charsPerTick);
+          generatedCode = code.slice(0,index);
+          updateCodeView();
+          if (index < code.length) {
+            setTimeout(tick, 16);
+          } else {
+            saveCurrentCode(code);
+            resolve();
+          }
+        };
+        tick();
+      });
+      setMessage("Your code is ready. Open Preview or click Refresh Preview.", "success");
+      setTab("preview");
+      refreshPreview(false);
+      toast("App generated successfully");
+    } catch (err) {
+      console.error(err);
+      setMessage(err.message || "Something went wrong while generating code.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+  function downloadCode() {
+    if (!generatedCode.trim()) return toast("There is no code to download yet.");
+    const blob = new Blob([generatedCode],{type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (activeProject()?.name || "my-app").replace(/[^\w-]+/g,"-").toLowerCase() + ".html";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("HTML download started");
+  }
+  function exportCode() { downloadCode(); }
+  function importCode(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const code = String(reader.result || "");
+      const name = file.name.replace(/\.(html?|txt)$/i,"") || "Imported Project";
+      newProject(name,code);
+      toast("Project imported");
+    };
+    reader.onerror = () => toast("Could not read that file.");
+    reader.readAsText(file);
+  }
+  function clearCode() {
+    if (!activeProject()) return;
+    if (!confirm("Clear the code in this project? This cannot be undone unless you have exported it.")) return;
+    saveCurrentCode("");
+    $("previewFrame").srcdoc = "";
+    setTab("code");
+    setMessage("Code cleared. Describe a new app to generate code.");
+    toast("Project code cleared");
+  }
+  function copyCode() {
+    if (!generatedCode.trim()) return toast("There is no code to copy yet.");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(generatedCode)
+        .then(() => toast("Code copied"))
+        .catch(() => fallbackCopy());
+    } else fallbackCopy();
+  }
+  function fallbackCopy() {
+    const area = document.createElement("textarea");
+    area.value = generatedCode;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    try { document.execCommand("copy");toast("Code copied"); }
+    catch { toast("Copy failed. Use Download instead."); }
+    area.remove();
+  }
+  function loadTemplate(name) {
+    const code = templates[name];
+    if (!code) return;
+    const labels = {blank:"Blank HTML",calculator:"Calculator",notes:"Notes App",game:"Mini Game"};
+    if (!activeProject()) newProject(labels[name],code);
+    else {
+      const p = activeProject();
+      p.name = labels[name];
+      saveCurrentCode(code);
+      renderProjectList();
+      showProject();
+    }
+    generatedCode = code;
+    updateCodeView();
+    setTab("preview");
+    refreshPreview(false);
+    setMessage(labels[name] + " template loaded.", "success");
+    toast(labels[name] + " ready");
+  }
+  function openSettings() {
+    $("endpointInput").value = localStorage.getItem(ENDPOINT_KEY) || "/api/chat";
+    $("settingsModal").style.display = "flex";
+  }
+  function closeSettings() { $("settingsModal").style.display = "none"; }
+  function initBackgroundCode() {
+    const snippets = [
+      "const app = createApplication();",
+      "function renderPreview(source) {",
+      "  return iframe.srcdoc = source;",
+      "}",
+      "class ProjectWorkspace {",
+      "  constructor(name, code) {",
+      "    this.name = name;",
+      "    this.code = code;",
+      "  }",
+      "}",
+      "const glass = { blur: 24, opacity: 0.72 };",
+      "async function build(prompt) {",
+      "  const result = await ai.generate(prompt);",
+      "  return result.html;",
+      "}",
+      "document.querySelector('#preview');",
+      "const theme = 'midnight-brown';",
+      "/* background code layer */",
+      "body { background: rgba(20, 18, 17, .8); }",
+      ".panel { backdrop-filter: blur(24px); }",
+      "if (project.saved) restore(project);",
+      "return { success: true, code };",
+      "const state = { ready: true };"
+    ];
+    ["bgCode1","bgCode2","bgCode3"].forEach((key,n) => {
+      let out = "";
+      for (let i=0;i<115;i++) out += snippets[(i*3+n*7)%snippets.length] + "\n";
+      $(key).textContent = out;
+    });
+  }
 
-function stopGeneration(){
-  if(generationController)generationController.abort();
-}
+  $("newProjectBtn").addEventListener("click",() => newProject());
+  $("newProjectSide").addEventListener("click",() => newProject());
+  $("generateBtn").addEventListener("click",generateCode);
+  $("prompt").addEventListener("keydown",e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generateCode();
+  });
+  $("codeTab").addEventListener("click",() => setTab("code"));
+  $("previewTab").addEventListener("click",() => setTab("preview"));
+  $("refreshBtn").addEventListener("click",() => refreshPreview(true));
+  $("copyBtn").addEventListener("click",copyCode);
+  $("downloadBtn").addEventListener("click",downloadCode);
+  $("exportBtn").addEventListener("click",exportCode);
+  $("clearBtn").addEventListener("click",clearCode);
+  $("importBtn").addEventListener("click",() => $("importFile").click());
+  $("importFile").addEventListener("change",e => {
+    importCode(e.target.files && e.target.files[0]);
+    e.target.value = "";
+  });
+  document.querySelectorAll("[data-prompt]").forEach(btn => {
+    btn.addEventListener("click",() => {
+      $("prompt").value = btn.dataset.prompt;
+      $("prompt").focus();
+    });
+  });
+  document.querySelectorAll("[data-template]").forEach(btn => {
+    btn.addEventListener("click",() => loadTemplate(btn.dataset.template);
+  });
+  $("settingsBtn").addEventListener("click",openSettings);
+  $("cancelSettings").addEventListener("click",closeSettings);
+  $("saveSettings").addEventListener("click",() => {
+    const endpoint = $("endpointInput").value.trim() || "/api/chat";
+    localStorage.setItem(ENDPOINT_KEY,endpoint);
+    closeSettings();
+    toast("Endpoint saved");
+  });
+  $("settingsModal").addEventListener("click",e => {
+    if (e.target === $("settingsModal")) closeSettings();
+  });
+  document.addEventListener("keydown",e => {
+    if (e.key === "Escape") closeSettings();
+  });
 
-$("newProjectTop").addEventListener("click",openNewProject);
-$("newProjectSide").addEventListener("click",openNewProject);
-$("createProjectBtn").addEventListener("click",createProject);
-$("cancelModal").addEventListener("click",()=>$("modalOverlay").classList.remove("show"));
-$("projectName").addEventListener("keydown",e=>{if(e.key==="Enter")createProject()});
-$("saveBtn").addEventListener("click",saveEditor);
-$("runBtn").addEventListener("click",runPreview);
-$("openPreviewSide").addEventListener("click",()=>openTab("preview"));
-$("formatBtn").addEventListener("click",formatCode);
-$("exportBtn").addEventListener("click",exportProject);
-$("importBtn").addEventListener("click",()=>$("projectImport").click());
-$("projectImport").addEventListener("change",e=>{
-  importFile(e.target.files[0]);e.target.value="";
-});
-$("generateBtn").addEventListener("click",generateCode);
-$("stopBtn").addEventListener("click",stopGeneration);
-$("codeInput").addEventListener("input",()=>{
-  updateEditor();
-  const p=currentProject();
-  if(p){p.code=$("codeInput").value;p.updated=Date.now();persist()}
-});
-$("codeInput").addEventListener("scroll",()=>{
-  $("highlightLayer").style.transform="translateY("+(-$("codeInput").scrollTop)+"px)";
-});
-document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>openTab(b.dataset.tab)));
-document.querySelectorAll("[data-prompt]").forEach(b=>b.addEventListener("click",()=>{
-  $("aiPrompt").value=b.dataset.prompt;
-  $("aiPrompt").focus();
-}));
-$("allProjectsBtn").addEventListener("click",()=>{
-  renderProjects();showToast(projects.length+" project(s) in your workspace.");
-});
-$("settingsBtn").addEventListener("click",()=>{
-  $("apiEndpoint").value=localStorage.getItem(SETTINGS_KEY)||"/api/chat";
-  $("settingsOverlay").classList.add("show");
-});
-$("closeSettings").addEventListener("click",()=>$("settingsOverlay").classList.remove("show"));
-$("saveSettings").addEventListener("click",()=>{
-  let endpoint=$("apiEndpoint").value.trim()||"/api/chat";
-  if(!endpoint.startsWith("/")&&!/^https?:\/\//i.test(endpoint)){
-    showToast("Enter a relative endpoint or a valid HTTP(S) URL.");return;
-  }
-  localStorage.setItem(SETTINGS_KEY,endpoint);
-  $("settingsOverlay").classList.remove("show");
-  showToast("Backend endpoint saved.");
-});
-$("modalOverlay").addEventListener("click",e=>{
-  if(e.target===$("modalOverlay"))$("modalOverlay").classList.remove("show");
-});
-$("settingsOverlay").addEventListener("click",e=>{
-  if(e.target===$("settingsOverlay"))$("settingsOverlay").classList.remove("show");
-});
-$("aiPrompt").addEventListener("keydown",e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key==="Enter")generateCode();
-});
-$("codeInput").addEventListener("keydown",e=>{
-  if(e.key==="Tab"){
-    e.preventDefault();
-    const start=e.target.selectionStart,end=e.target.selectionEnd;
-    e.target.setRangeText("  ",start,end,"end");
-    updateEditor();
-  }
-  if((e.ctrlKey||e.metaKey)&&e.key==="s"){
-    e.preventDefault();saveEditor();
-  }
-});
-document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){
-    $("modalOverlay").classList.remove("show");
-    $("settingsOverlay").classList.remove("show");
-  }
-});
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (Array.isArray(saved)) projects = saved.filter(p => p && p.id);
+  } catch { projects = []; }
+  const savedActive = localStorage.getItem(ACTIVE_KEY);
+  if (savedActive && projects.some(p => p.id === savedActive)) activeId = savedActive;
+  else if (projects.length) activeId = projects[0].id;
 
-loadProjects();
-renderProjects();
-switchProject(currentId);
+  if (!activeId) newProject("Untitled Project","");
+  else {
+    renderProjectList();
+    showProject();
+  }
+  initBackgroundCode();
+})();
 </script>
 </body>
 </html>
